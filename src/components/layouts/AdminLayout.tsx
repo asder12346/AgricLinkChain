@@ -53,7 +53,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white">
             <Shield className="w-4 h-4" />
           </div>
-          <span className="font-serif font-bold text-xl text-gray-900">AgriLinkChain</span>
+          <span className="font-serif font-bold text-xl text-gray-900">AgricLinkChain</span>
         </Link>
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-600">
           {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -73,7 +73,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <Shield className="w-5 h-5" />
             </div>
             <div>
-              <span className="font-serif font-bold text-xl text-gray-900 block leading-none">AgriLinkChain</span>
+              <span className="font-serif font-bold text-xl text-gray-900 block leading-none">AgricLinkChain</span>
               <span className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">Admin Panel</span>
             </div>
           </div>

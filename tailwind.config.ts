@@ -105,6 +105,14 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.5" },
         },
+        marquee: {
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-100%)" },
+        },
+        marquee2: {
+          "0%": { transform: "translateX(100%)" },
+          "100%": { transform: "translateX(0%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -114,6 +122,8 @@ export default {
         "slide-down": "slide-down 0.5s ease-out forwards",
         "scale-in": "scale-in 0.3s ease-out forwards",
         pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        marquee: "marquee 30s linear infinite",
+        marquee2: "marquee2 30s linear infinite",
       },
       boxShadow: {
         glow: "0 0 40px rgba(34, 139, 34, 0.15)",

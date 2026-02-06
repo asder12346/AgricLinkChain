@@ -48,7 +48,7 @@ export function BuyerLayout({ children }: BuyerLayoutProps) {
           <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-white">
             <ShoppingBag className="w-4 h-4" />
           </div>
-          <span className="font-serif font-bold text-xl text-gray-900">AgriLinkChain</span>
+          <span className="font-serif font-bold text-xl text-gray-900">AgricLinkChain</span>
         </Link>
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-600">
           {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -68,7 +68,7 @@ export function BuyerLayout({ children }: BuyerLayoutProps) {
               <ShoppingBag className="w-5 h-5" />
             </div>
             <div>
-              <span className="font-serif font-bold text-xl text-gray-900 block leading-none">AgriLinkChain</span>
+              <span className="font-serif font-bold text-xl text-gray-900 block leading-none">AgricLinkChain</span>
               <span className="text-[10px] uppercase tracking-widest text-gray-400 font-medium">Buyer Portal</span>
             </div>
           </div>

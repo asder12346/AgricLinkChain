@@ -78,7 +78,7 @@ export function Navbar() {
             )}>
               <Leaf className={cn("w-5 h-5", scrolled || !isHome ? "text-white" : "text-green-400")} />
             </div>
-            <span className={logoClass}>AgriLinkChain</span>
+            <span className={logoClass}>AgricLinkChain</span>
           </Link>
 
           {/* Desktop Navigation */}

@@ -49,7 +49,7 @@ const Login = () => {
           <div>
             <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors">
               <Leaf className="w-6 h-6" />
-              <span className="font-bold text-xl">AgriLinkChain</span>
+              <span className="font-bold text-xl">AgricLinkChain</span>
             </Link>
           </div>
           <div>

@@ -1,4 +1,4 @@
--- AgriLinkChain Database Schema
+-- AgricLinkChain Database Schema
 -- ================================
 
 -- 1. Create ENUM types

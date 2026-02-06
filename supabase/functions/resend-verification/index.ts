@@ -60,8 +60,8 @@ serve(async (req) => {
     body: JSON.stringify({
       from: resendFrom,
       to: [body.email],
-      subject: "Confirm your AgriLinkChain account",
-      html: `<p>Welcome to AgriLinkChain!</p><p>Please confirm your email to activate your account:</p><p><a href="${data.properties.action_link}">Confirm email</a></p>`,
+      subject: "Confirm your AgricLinkChain account",
+      html: `<p>Welcome to AgricLinkChain!</p><p>Please confirm your email to activate your account:</p><p><a href="${data.properties.action_link}">Confirm email</a></p>`,
     }),
   });
 

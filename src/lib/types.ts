@@ -1,4 +1,4 @@
-// AgriLinkChain Type Definitions
+// AgricLinkChain Type Definitions
 
 export type AppRole = 'farmer' | 'buyer' | 'admin';
 export type VerificationStatus = 'pending' | 'approved' | 'rejected';

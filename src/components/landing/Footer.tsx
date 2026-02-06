@@ -12,7 +12,7 @@ export function Footer() {
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <Leaf className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-background">AgriLinkChain</span>
+              <span className="text-xl font-bold text-background">AgricLinkChain</span>
             </Link>
             <p className="text-background/60 text-sm leading-relaxed mb-8">
               Revolutionizing agricultural trade through blockchain transparency, AI-driven insights, and direct connections between farmers and global markets.
