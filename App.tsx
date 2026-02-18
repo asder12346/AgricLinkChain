@@ -13,36 +13,74 @@ import Contact from './components/Contact';
 import Footer from './components/Footer';
 import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import { supabase } from './lib/supabase';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'landing' | 'auth' | 'dashboard'>('landing');
+  const [view, setView] = useState<'landing' | 'auth' | 'dashboard' | 'admin-dashboard'>('landing');
+  const [authRole, setAuthRole] = useState<string>('Farmer');
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check for admin path in URL
+    if (window.location.pathname === '/admin-dashboard') {
+      setView('admin-dashboard');
+    }
+
+    // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      // If user is logged in and we are on landing/auth, we might want to stay or go to dashboard
-      // Let's stay on landing by default but allow navigation
+      if (session?.user) {
+        setUser(session.user);
+        // Only set view to dashboard if we're not on admin-dashboard already
+        if (window.location.pathname !== '/admin-dashboard') {
+          setView('dashboard');
+        }
+      }
+      setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user && view === 'auth') {
-        setView('dashboard');
+    // Global auth listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        if (window.location.pathname !== '/admin-dashboard') {
+          setView('dashboard');
+        }
+      } else {
+        setUser(null);
+        if (view === 'dashboard' || view === 'admin-dashboard') setView('landing');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [view]);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0A1D11] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-lime-400 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setView('landing');
   };
 
+  const handleJoin = (role: string = 'Farmer') => {
+    setAuthRole(role);
+    setView('auth');
+  };
+
   if (view === 'auth') {
-    return <AuthPage onBack={() => setView('landing')} />;
+    return <AuthPage onBack={() => setView('landing')} initialType={authRole} />;
+  }
+
+  if (view === 'admin-dashboard') {
+    // In a real app, you'd check if user.user_metadata.user_type === 'Admin'
+    return <AdminDashboard onSignOut={handleSignOut} />;
   }
 
   if (view === 'dashboard' && user) {
@@ -51,10 +89,10 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0A1D11] text-white overflow-x-hidden selection:bg-lime-400 selection:text-[#0A1D11]">
-      <Navbar onJoin={() => setView('auth')} onGoDashboard={() => setView('dashboard')} user={user} />
+      <Navbar onJoin={() => handleJoin('Farmer')} onGoDashboard={() => setView('dashboard')} user={user} />
       <main>
         <section id="hero">
-          <Hero onStart={() => setView('auth')} />
+          <Hero onStart={() => handleJoin('Farmer')} />
         </section>
         
         <LogoCloud />
@@ -70,7 +108,7 @@ const App: React.FC = () => {
         <Stats />
 
         <section id="impact" className="py-20 md:py-32">
-          <Mission />
+          <Mission onJoin={handleJoin} />
         </section>
 
         <section id="stories" className="py-20 md:py-32 bg-neutral-50 text-[#0A1D11]">
