@@ -414,7 +414,9 @@ CREATE TABLE public.profiles (
   id uuid REFERENCES auth.users ON DELETE CASCADE,
   full_name text,
   email text,
-  user_type text CHECK (user_type IN ('Farmer', 'Buyer', 'Agent', 'Admin')),
+  user_type text CHECK (user_type IN ('Farmer', 'Buyer', 'Agent', 'Admin', 'Pharmacy')),
+  referred_by text,
+  location text,
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
   PRIMARY KEY (id)
 );
