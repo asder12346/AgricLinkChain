@@ -5,7 +5,7 @@ import {
   LogOut, Leaf, Plus, TrendingUp, Clock, Menu, X, Settings,
   Trash2, RefreshCw, Users, Loader2, Save, ShoppingBag, Box, Image as ImageIcon,
   PlusCircle, CheckCircle2, Edit2, Calendar, MapPin, ExternalLink, Wallet, CreditCard,
-  ChevronRight, ArrowLeft, Truck, Star, ShieldCheck
+  ChevronRight, ArrowLeft, Truck, Star, ShieldCheck, UserPlus, Share2, Copy
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -51,22 +51,18 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
       } else if (userRole === 'Agent') {
         const myCode = prof?.referral_code;
         if (myCode) {
-          const { data: network } = await supabase.from('profiles').select('*').eq('referred_by', myCode);
+          const { data: network } = await supabase.from('profiles').select('*').eq('referred_by', myCode).order('created_at', { ascending: false });
           if (network) setOnboardedEntities(network);
         }
       } else if (userRole === 'Buyer') {
-        // Fetch marketplace for buyer
         const { data: marketplace } = await supabase.from('listings').select(`*, profiles:farmer_id (full_name, location)` );
-        
         const defaultMarket = [
           { id: 'm1', name: 'Premium Cocoa Beans', price: 5200, unit: 'kg', stock: 5000, category: 'Grains', image_url: 'https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&q=80&w=600', profiles: { full_name: 'Ondo Cocoa Estate', location: 'Ondo State' } },
           { id: 'm2', name: 'Bulk White Maize', price: 38000, unit: 'ton', stock: 15, category: 'Grains', image_url: 'https://images.unsplash.com/photo-1551739440-5dd934d3a94a?auto=format&fit=crop&q=80&w=600', profiles: { full_name: 'Zaria Harvesters', location: 'Kaduna State' } },
           { id: 'm3', name: 'Fresh Cassava Roots', price: 800, unit: 'ton', stock: 100, category: 'Tubers', image_url: 'https://images.unsplash.com/photo-1600100397608-f010e423b971?auto=format&fit=crop&q=80&w=600', profiles: { full_name: 'Owerri Roots Ltd', location: 'Imo State' } },
           { id: 'm4', name: 'Sweet Potatoes', price: 12000, unit: 'bag', stock: 240, category: 'Tubers', image_url: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80&w=600', profiles: { full_name: 'Benue Highland Farms', location: 'Benue State' } },
         ];
-
         setMarketProducts(marketplace && marketplace.length > 0 ? [...marketplace, ...defaultMarket] : defaultMarket);
-        
         const { data: myOrders } = await supabase.from('orders').select('*').eq('buyer_id', user.id).order('created_at', { ascending: false });
         if (myOrders) setOrders(myOrders);
       }
@@ -81,9 +77,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
     e.preventDefault();
     setIsOrdering(true);
     try {
-      // In a real app we'd need a real farmer_id. If using defaults, use a dummy one.
       const farmerId = checkoutProduct.farmer_id || '00000000-0000-0000-0000-000000000000';
-      
       const { error } = await supabase.from('orders').insert([{
         buyer_id: user.id,
         farmer_id: farmerId,
@@ -93,9 +87,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
         total_price: checkoutProduct.price * orderQty,
         status: 'Pending'
       }]);
-
       if (error) throw error;
-      
       alert('Order placed successfully! The farmer will contact you for delivery details.');
       setCheckoutProduct(null);
       setActiveTab('My Orders');
@@ -130,14 +122,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
     );
   }
 
+  const agentCode = profile?.referral_code || 'AGR-PENDING';
+
   return (
     <div className="min-h-screen bg-[#F4F7F5] flex font-['Plus_Jakarta_Sans'] text-[#0A1D11]">
-      {/* Sidebar Overlay for Mobile */}
       {isSidebarOpen && (
         <div className="fixed inset-0 z-40 bg-[#0A1D11]/60 lg:hidden" onClick={() => setIsSidebarOpen(false)}></div>
       )}
 
-      {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#0A1D11] transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-full flex flex-col p-8">
           <div className="flex items-center justify-between mb-12">
@@ -207,6 +199,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                  {userRole === 'Buyer' && (
                     <button onClick={() => setActiveTab('Marketplace')} className="bg-lime-400 text-[#0A1D11] px-10 py-5 rounded-[2rem] font-black flex items-center gap-3 shadow-2xl hover:scale-105 active:scale-95 transition-all">
                       <ShoppingBag className="w-5 h-5" /> Start Trading
+                    </button>
+                 )}
+                 {userRole === 'Agent' && (
+                    <button onClick={() => setActiveTab('My Network')} className="bg-[#0A1D11] text-white px-10 py-5 rounded-[2rem] font-black flex items-center gap-3 shadow-2xl hover:scale-105 active:scale-95 transition-all">
+                      <UserPlus className="w-5 h-5 text-lime-400" /> Recruit Member
                     </button>
                  )}
                </div>
@@ -290,11 +287,109 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
             </div>
           )}
 
+          {activeTab === 'My Network' && userRole === 'Agent' && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+               <div className="grid lg:grid-cols-3 gap-8">
+                  <div className="lg:col-span-2 space-y-8">
+                    <div className="bg-white p-10 rounded-[3rem] border border-neutral-100 shadow-sm relative overflow-hidden group">
+                       <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                          <div className="space-y-2">
+                             <h2 className="text-3xl font-black tracking-tight text-[#0A1D11]">Network Expansion</h2>
+                             <p className="text-neutral-500 font-medium">Manage and track your successfully onboarded agricultural stakeholders.</p>
+                          </div>
+                          <div className="bg-[#0A1D11] p-6 rounded-[2rem] text-white w-full md:w-auto min-w-[240px]">
+                             <p className="text-[10px] font-black uppercase tracking-widest text-lime-400/60 mb-2">My Referral Code</p>
+                             <div className="flex items-center justify-between gap-4">
+                                <span className="text-2xl font-black font-mono">{agentCode}</span>
+                                <button onClick={() => {navigator.clipboard.writeText(agentCode); alert('Referral ID copied to clipboard!');}} className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
+                                   <Copy className="w-4 h-4" />
+                                </button>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="bg-white rounded-[3rem] border border-neutral-100 shadow-sm overflow-hidden">
+                       <div className="p-8 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/30">
+                          <h3 className="font-black text-xl">Onboarded Members</h3>
+                          <div className="text-[10px] font-black text-lime-600 bg-lime-100 px-3 py-1 rounded-full uppercase">{onboardedEntities.length} Total</div>
+                       </div>
+                       <div className="overflow-x-auto">
+                          <table className="w-full text-left">
+                             <thead className="bg-neutral-50/50 text-[10px] font-black text-neutral-400 uppercase tracking-widest">
+                                <tr>
+                                   <th className="px-8 py-5">Full Name / Entity</th>
+                                   <th className="px-8 py-5">Role</th>
+                                   <th className="px-8 py-5">Onboarding Date</th>
+                                   <th className="px-8 py-5 text-right">Performance</th>
+                                </tr>
+                             </thead>
+                             <tbody className="divide-y divide-neutral-50">
+                                {onboardedEntities.map(entity => (
+                                   <tr key={entity.id} className="hover:bg-neutral-50/50 transition-colors">
+                                      <td className="px-8 py-6">
+                                         <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center font-black text-[#0A1D11]">{entity.full_name?.charAt(0)}</div>
+                                            <div>
+                                               <p className="font-bold text-sm">{entity.full_name}</p>
+                                               <p className="text-[10px] text-neutral-400 font-mono">{entity.id.slice(0,8)}</p>
+                                            </div>
+                                         </div>
+                                      </td>
+                                      <td className="px-8 py-6">
+                                         <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${entity.user_type === 'Farmer' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
+                                            {entity.user_type}
+                                         </span>
+                                      </td>
+                                      <td className="px-8 py-6 text-xs text-neutral-400 font-bold">
+                                         {new Date(entity.created_at).toLocaleDateString()}
+                                      </td>
+                                      <td className="px-8 py-6 text-right text-xs font-black text-lime-600">Verified</td>
+                                   </tr>
+                                ))}
+                                {onboardedEntities.length === 0 && (
+                                   <tr>
+                                      <td colSpan={4} className="p-32 text-center text-neutral-300">
+                                         <Users className="w-16 h-16 mx-auto mb-6 opacity-10" />
+                                         <p className="font-black uppercase tracking-[0.2em] text-[10px]">Your network is ready to grow</p>
+                                      </td>
+                                   </tr>
+                                )}
+                             </tbody>
+                          </table>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                     <div className="bg-[#0A1D11] p-10 rounded-[3rem] text-white space-y-8 shadow-2xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-lime-400/5 blur-[80px] -mr-16 -mt-16 group-hover:bg-lime-400/10 transition-all"></div>
+                        <h4 className="text-xl font-black">Agent Resources</h4>
+                        <div className="space-y-4">
+                           <div className="p-6 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-4">
+                              <div className="p-3 bg-lime-400/10 text-lime-400 rounded-xl"><Share2 className="w-5 h-5" /></div>
+                              <div><p className="text-sm font-bold">Marketing Kits</p><p className="text-[10px] text-white/30 font-black uppercase">Download visuals</p></div>
+                           </div>
+                           <div className="p-6 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-4">
+                              <div className="p-3 bg-blue-400/10 text-blue-400 rounded-xl"><Box className="w-5 h-5" /></div>
+                              <div><p className="text-sm font-bold">Stakeholder Perks</p><p className="text-[10px] text-white/30 font-black uppercase">Benefits list</p></div>
+                           </div>
+                        </div>
+                        <div className="pt-6 border-t border-white/10 space-y-4">
+                           <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest">Commission Logic</p>
+                           <p className="text-xs text-white/40 leading-relaxed font-medium">Earn 2% of transaction volume for every farmer and buyer onboarded through your unique digital ID.</p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+          )}
+
           {activeTab === 'Marketplace' && userRole === 'Buyer' && (
             <div className="space-y-12 animate-in fade-in duration-500">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-2">
-                  <h2 className="text-4xl font-black tracking-tight">Trade Hub</h2>
+                  <h2 className="text-4xl font-black tracking-tight text-[#0A1D11]">Trade Hub</h2>
                   <p className="text-neutral-500 font-medium">Verified agricultural commodities from direct sources.</p>
                 </div>
                 <div className="bg-lime-100 text-lime-700 px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest shadow-sm">
@@ -379,7 +474,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                     <div className="lg:col-span-3 p-10 lg:p-20 space-y-12 overflow-y-auto">
                        <div className="space-y-8">
                           <h4 className="text-xs font-black uppercase text-neutral-400 tracking-widest border-b border-neutral-100 pb-4">Checkout Configuration</h4>
-                          
                           <div className="grid md:grid-cols-2 gap-10">
                             <div className="space-y-3">
                                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Select Quantity ({checkoutProduct.unit})</label>
@@ -398,7 +492,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                             </div>
                           </div>
                        </div>
-
                        <div className="space-y-6">
                           <div className="bg-[#0A1D11] p-10 rounded-[3rem] text-white space-y-8 shadow-2xl relative overflow-hidden group">
                              <div className="absolute top-0 right-0 w-64 h-64 bg-lime-400/10 blur-[100px] -mr-32 -mt-32"></div>
@@ -424,7 +517,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                                    </div>
                                 </div>
                              </div>
-                             
                              <button onClick={handleCreateOrder} disabled={isOrdering} className="w-full py-6 bg-lime-400 text-[#0A1D11] rounded-[2rem] font-black text-lg flex items-center justify-center gap-4 hover:bg-lime-300 active:scale-95 transition-all relative z-10 shadow-2xl shadow-lime-400/20 group">
                                 {isOrdering ? <Loader2 className="animate-spin" /> : <><CreditCard className="w-6 h-6" /> Complete Purchase</>}
                              </button>
