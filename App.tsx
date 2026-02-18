@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import LogoCloud from './components/LogoCloud';
@@ -11,14 +11,50 @@ import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
+import AuthPage from './pages/AuthPage';
+import Dashboard from './pages/Dashboard';
+import { supabase } from './lib/supabase';
 
 const App: React.FC = () => {
+  const [view, setView] = useState<'landing' | 'auth' | 'dashboard'>('landing');
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      // If user is logged in and we are on landing/auth, we might want to stay or go to dashboard
+      // Let's stay on landing by default but allow navigation
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user && view === 'auth') {
+        setView('dashboard');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [view]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setView('landing');
+  };
+
+  if (view === 'auth') {
+    return <AuthPage onBack={() => setView('landing')} />;
+  }
+
+  if (view === 'dashboard' && user) {
+    return <Dashboard user={user} onSignOut={handleSignOut} onGoHome={() => setView('landing')} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#0A1D11] text-white overflow-x-hidden selection:bg-lime-400 selection:text-[#0A1D11]">
-      <Navbar />
+      <Navbar onJoin={() => setView('auth')} onGoDashboard={() => setView('dashboard')} user={user} />
       <main>
         <section id="hero">
-          <Hero />
+          <Hero onStart={() => setView('auth')} />
         </section>
         
         <LogoCloud />
