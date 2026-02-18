@@ -54,7 +54,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
               full_name: fullName,
               user_type: userType,
               referral_code: referralCode, // Code they give out (Agents only)
-              referred_by: (userType === 'Farmer' || userType === 'Pharmacy') ? agentReferralCode : null, // Code they entered
+              referred_by: (userType === 'Farmer') ? agentReferralCode : null, // Code they entered
             },
             emailRedirectTo: window.location.origin,
           },
@@ -136,7 +136,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
                 type="text" 
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="John Doe or Green Pharmacy" 
+                placeholder="John Doe or Agri Corp" 
                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:border-lime-400 outline-none transition-colors text-white font-medium" 
               />
             </div>
@@ -171,7 +171,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
               <div className="space-y-2">
                 <label className="text-xs font-black text-white/40 uppercase tracking-widest">Register As</label>
                 <div className="grid grid-cols-2 gap-3">
-                  {['Farmer', 'Buyer', 'Agent', 'Pharmacy', 'Admin'].map((type) => (
+                  {['Farmer', 'Buyer', 'Agent', 'Admin'].map((type) => (
                     <button
                       key={type}
                       type="button"
@@ -184,7 +184,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
                 </div>
               </div>
 
-              {(userType === 'Farmer' || userType === 'Pharmacy') && (
+              {(userType === 'Farmer') && (
                 <div className="space-y-2 animate-in slide-in-from-top duration-300">
                   <label className="text-xs font-black text-lime-400 uppercase tracking-widest flex items-center gap-2">
                     <Hash className="w-4 h-4" /> Agent ID (Optional)
