@@ -33,6 +33,12 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
     await supabase.auth.signOut();
   };
 
+  const scrollToSection = (id: string) => {
+    setIsOpen(false);
+    const el = document.querySelector(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#0A1D11]/90 backdrop-blur-md py-4 border-b border-white/10' : 'bg-transparent py-6'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -46,13 +52,13 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
 
           <div className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
-              <a 
+              <button 
                 key={link.name} 
-                href={link.href}
+                onClick={() => scrollToSection(link.href)}
                 className="text-sm font-medium text-white/80 hover:text-lime-400 transition-colors"
               >
                 {link.name}
-              </a>
+              </button>
             ))}
           </div>
 
@@ -92,18 +98,16 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       <div className={`md:hidden absolute w-full bg-[#0A1D11] transition-all duration-300 ease-in-out ${isOpen ? 'max-h-screen opacity-100 border-b border-white/10' : 'max-h-0 opacity-0 overflow-hidden'}`}>
         <div className="px-4 pt-4 pb-8 space-y-4">
           {navLinks.map((link) => (
-            <a
+            <button
               key={link.name}
-              href={link.href}
-              className="block text-lg font-medium py-2 text-white/90 hover:text-lime-400"
-              onClick={() => setIsOpen(false)}
+              onClick={() => scrollToSection(link.href)}
+              className="block w-full text-left text-lg font-medium py-2 text-white/90 hover:text-lime-400"
             >
               {link.name}
-            </a>
+            </button>
           ))}
           {user ? (
             <div className="space-y-4 pt-4 border-t border-white/10">
