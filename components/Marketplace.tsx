@@ -3,7 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, Heart, Loader2, Filter, Search, ChevronRight, PlusCircle, Box, MapPin } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-const Marketplace: React.FC = () => {
+interface MarketplaceProps {
+  onInitiateOrder?: (product: any) => void;
+}
+
+const Marketplace: React.FC<MarketplaceProps> = ({ onInitiateOrder }) => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
@@ -94,7 +98,6 @@ const Marketplace: React.FC = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      // Merge database products with defaults to ensure it's never empty on landing page
       setProducts(data && data.length > 0 ? [...data, ...defaultProducts] : defaultProducts);
     } catch (err) {
       console.error('Error fetching marketplace:', err);
@@ -186,7 +189,10 @@ const Marketplace: React.FC = () => {
                   </div>
                 </div>
 
-                <button className="w-full bg-[#0A1D11] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 group-hover:bg-lime-400 group-hover:text-[#0A1D11] transition-all shadow-xl shadow-neutral-200">
+                <button 
+                  onClick={() => onInitiateOrder?.(product)}
+                  className="w-full bg-[#0A1D11] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 group-hover:bg-lime-400 group-hover:text-[#0A1D11] transition-all shadow-xl shadow-neutral-200"
+                >
                   <ShoppingCart className="w-5 h-5" />
                   Initiate Order
                 </button>
@@ -203,7 +209,10 @@ const Marketplace: React.FC = () => {
            <h3 className="text-4xl md:text-5xl font-black leading-tight">Scale your farming <br/><span className="text-lime-400">operations today.</span></h3>
            <p className="font-medium text-white/50 max-w-lg">Join 12,000+ agribusinesses growing through transparent global market connectivity.</p>
          </div>
-         <button className="bg-lime-400 text-[#0A1D11] px-12 py-6 rounded-[2rem] font-black text-lg flex items-center gap-4 shadow-2xl shadow-lime-400/20 hover:scale-105 active:scale-95 transition-all relative z-10 group">
+         <button 
+           onClick={() => onInitiateOrder?.({})}
+           className="bg-lime-400 text-[#0A1D11] px-12 py-6 rounded-[2rem] font-black text-lg flex items-center gap-4 shadow-2xl shadow-lime-400/20 hover:scale-105 active:scale-95 transition-all relative z-10 group"
+         >
            Explore Marketplace <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
          </button>
       </div>

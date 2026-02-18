@@ -102,7 +102,13 @@ const App: React.FC = () => {
         </section>
 
         <section id="marketplace" className="py-20 md:py-32 bg-white text-[#0A1D11]">
-          <Marketplace />
+          <Marketplace onInitiateOrder={() => {
+            if (!user) {
+              handleJoin('Buyer');
+            } else {
+              setView('dashboard');
+            }
+          }} />
         </section>
 
         <Stats />
