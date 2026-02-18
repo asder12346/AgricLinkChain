@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Leaf, ArrowLeft, Loader2, AlertCircle, Hash } from 'lucide-react';
+import { Leaf, ArrowLeft, Loader2, AlertCircle, Hash, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface AuthPageProps {
@@ -11,6 +11,7 @@ interface AuthPageProps {
 const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) => {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signup');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form states
@@ -35,7 +36,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
       if (activeTab === 'signup') {
         const referralCode = userType === 'Agent' ? generateReferralCode(fullName) : null;
         
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        const { data, error: authError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -49,25 +50,44 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
         });
 
         if (authError) throw authError;
-
-        alert('Registration successful! You can now sign in.');
-        setActiveTab('signin');
+        
+        // Success state for smooth transition
+        setSuccess(true);
+        setTimeout(() => {
+          // The App listener will automatically switch to Dashboard view
+        }, 1500);
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
-        onBack();
+        // The App listener handles the view change
       }
     } catch (err: any) {
       setError(err.message || 'Authentication error');
-    } finally {
       setLoading(false);
     }
   };
 
+  if (success) {
+    return (
+      <div className="min-h-screen bg-[#0A1D11] flex flex-col items-center justify-center p-4">
+        <div className="text-center space-y-6 animate-in zoom-in duration-500">
+           <div className="w-20 h-20 bg-lime-400 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-lime-400/20">
+              <CheckCircle2 className="w-10 h-10 text-[#0A1D11]" />
+           </div>
+           <div className="space-y-2">
+             <h2 className="text-3xl font-bold text-white">Welcome Aboard!</h2>
+             <p className="text-white/60">Your agricultural journey starts now. Redirecting...</p>
+           </div>
+           <Loader2 className="w-6 h-6 text-lime-400 animate-spin mx-auto" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0A1D11] flex flex-col items-center justify-center p-4">
       <button onClick={onBack} className="absolute top-8 left-8 text-white/60 hover:text-white flex items-center gap-2 transition-colors">
-        <ArrowLeft className="w-5 h-5" /> Back
+        <ArrowLeft className="w-5 h-5" /> Back Home
       </button>
 
       <div className="max-w-md w-full space-y-8 bg-[#0D2517] p-8 md:p-12 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden">
@@ -76,9 +96,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
         <div className="text-center space-y-4 relative">
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="bg-lime-400 p-1.5 rounded-lg"><Leaf className="w-6 h-6 text-[#0A1D11]" /></div>
-            <span className="text-2xl font-extrabold text-white">AgriLinkChain</span>
+            <span className="text-2xl font-extrabold text-white">AgriLink</span>
           </div>
-          <h2 className="text-3xl font-bold text-white tracking-tight">{activeTab === 'signup' ? 'Create Account' : 'Welcome back'}</h2>
+          <h2 className="text-3xl font-bold text-white tracking-tight">
+            {activeTab === 'signup' ? 'Join the Future' : 'Welcome back'}
+          </h2>
         </div>
 
         <form className="space-y-6 relative" onSubmit={handleAuth}>
@@ -87,7 +109,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
           </div>}
 
           {activeTab === 'signup' && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Register As</label>
               <div className="grid grid-cols-3 gap-2">
                 {['Farmer', 'Buyer', 'Agent'].map((type) => (
@@ -124,14 +146,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
           {activeTab === 'signup' && (userType === 'Farmer' || userType === 'Buyer') && (
             <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
               <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-2">
-                <Hash className="w-3 h-3" /> Agent ID (Referral)
+                <Hash className="w-3 h-3" /> Agent Referral ID
               </label>
               <input type="text" value={agentReferralCode} onChange={(e) => setAgentReferralCode(e.target.value.toUpperCase())} placeholder="e.g. AGR-1234 (Optional)" className="w-full bg-white/5 border border-lime-400/30 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400 font-mono font-bold tracking-wider" />
             </div>
           )}
 
           <button disabled={loading} type="submit" className="w-full bg-lime-400 text-[#0A1D11] py-5 rounded-2xl font-black text-lg hover:bg-lime-300 transition-all flex items-center justify-center gap-3 shadow-xl shadow-lime-400/10">
-            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (activeTab === 'signup' ? 'Create Account' : 'Sign In')}
+            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (activeTab === 'signup' ? 'Create Account' : 'Sign In Now')}
           </button>
         </form>
 
