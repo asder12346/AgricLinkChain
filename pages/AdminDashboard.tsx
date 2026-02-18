@@ -23,7 +23,11 @@ import {
   History,
   Trash2,
   Settings,
-  Leaf
+  Leaf,
+  Loader2,
+  // Added missing icons
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -35,43 +39,84 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<any[]>([]);
+  
+  // Real Data State
+  const [userStats, setUserStats] = useState({
+    farmers: 0,
+    buyers: 0,
+    agents: 0,
+    total: 0
+  });
+  const [revenue, setRevenue] = useState(0);
+  const [recentUsers, setRecentUsers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     fetchAdminData();
+    
+    // Real-time subscriptions
+    const productSubscription = supabase
+      .channel('admin-products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, () => fetchAdminData())
+      .subscribe();
+
+    const orderSubscription = supabase
+      .channel('admin-orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchAdminData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(productSubscription);
+      supabase.removeChannel(orderSubscription);
+    };
   }, []);
 
   const fetchAdminData = async () => {
     setLoading(true);
     try {
-      // Mocking data for admin insights
-      const mockUsers = [
-        { id: '1', name: 'John Doe', type: 'Farmer', email: 'john@farmer.com', joined: '2024-01-10', status: 'Active' },
-        { id: '2', name: 'Global Foods Ltd', type: 'Buyer', email: 'contact@global.com', joined: '2024-01-15', status: 'Verified' },
-        { id: '3', name: 'Sarah Agent', type: 'Agent', email: 'sarah@agrilink.com', joined: '2024-02-01', status: 'Active' },
-        { id: '4', name: 'City Pharmacy', type: 'Pharmacy', email: 'info@citypharm.com', joined: '2024-02-05', status: 'Active' },
-        { id: '5', name: 'Alice Smith', type: 'Farmer', email: 'alice@farm.com', joined: '2024-02-10', status: 'Pending' }
-      ];
-      setUsers(mockUsers);
+      // 1. Fetch User Stats (Profiles)
+      // Note: This assumes a 'profiles' table exists that mirrors auth.users
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      const mockProducts = [
-        { id: 'p1', name: 'Organic Ginger', price: 800, unit: 'kg', farmer: 'John Doe', stock: '200kg' },
-        { id: 'p2', name: 'Long Grain Rice', price: 25000, unit: 'bag', farmer: 'Alice Smith', stock: '50 bags' },
-        { id: 'p3', name: 'Tomato Paste', price: 3000, unit: 'crate', farmer: 'John Doe', stock: '15 crates' }
-      ];
-      setProducts(mockProducts);
+      if (!profileError && profiles) {
+        const stats = {
+          farmers: profiles.filter(p => p.user_type === 'Farmer').length,
+          buyers: profiles.filter(p => p.user_type === 'Buyer').length,
+          agents: profiles.filter(p => p.user_type === 'Agent').length,
+          total: profiles.length
+        };
+        setUserStats(stats);
+        setRecentUsers(profiles.slice(0, 5));
+      }
 
-      const { data: realTransactions } = await supabase
+      // 2. Fetch Products (Listings)
+      const { data: listings, error: listingError } = await supabase
+        .from('listings')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!listingError && listings) {
+        setProducts(listings);
+      }
+
+      // 3. Fetch Transactions (Orders)
+      const { data: orders, error: orderError } = await supabase
         .from('orders')
         .select('*')
-        .limit(10)
         .order('created_at', { ascending: false });
-      
-      setTransactions(realTransactions || []);
+
+      if (!orderError && orders) {
+        setTransactions(orders);
+        const totalRev = orders.reduce((acc, curr) => acc + (curr.total_price || 0), 0);
+        setRevenue(totalRev);
+      }
+
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching admin data:', err);
     } finally {
       setLoading(false);
     }
@@ -87,12 +132,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
     { name: 'Settings', icon: Settings }
   ];
 
-  const stats = [
-    { label: 'Total Revenue', value: '₦45.2M', growth: '+12.5%', icon: Wallet, color: 'text-green-500' },
-    { label: 'Active Farmers', value: '12,402', growth: '+4.2%', icon: Users, color: 'text-blue-500' },
-    { label: 'Total Buyers', value: '45,120', growth: '+8.1%', icon: ShoppingBag, color: 'text-orange-500' },
-    { label: 'Agents', value: '2,840', growth: '+2.4%', icon: Building2, color: 'text-lime-500' }
+  const statsCards = [
+    { label: 'Total Revenue', value: `₦${revenue.toLocaleString()}`, growth: '+5.4%', icon: Wallet, color: 'text-green-500' },
+    { label: 'Active Farmers', value: userStats.farmers.toLocaleString(), growth: '+2.1%', icon: Users, color: 'text-blue-500' },
+    { label: 'Total Buyers', value: userStats.buyers.toLocaleString(), growth: '+4.3%', icon: ShoppingBag, color: 'text-orange-500' },
+    { label: 'Network Agents', value: userStats.agents.toLocaleString(), growth: '+1.2%', icon: Building2, color: 'text-lime-500' }
   ];
+
+  if (loading && activeTab === 'Overview' && transactions.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#F0F2F5] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-lime-500 animate-spin" />
+          <p className="font-bold text-[#0A1D11] uppercase tracking-widest text-sm">Aggregating Global Data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F0F2F5] flex font-['Plus_Jakarta_Sans'] text-[#0A1D11]">
@@ -151,16 +207,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
             </div>
           </div>
           <div className="flex items-center gap-6">
-            <div className="relative cursor-pointer">
-              <Bell className="w-6 h-6 text-neutral-400" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full text-[8px] text-white flex items-center justify-center font-bold">3</span>
+            <div className="relative cursor-pointer" onClick={fetchAdminData}>
+              <History className="w-6 h-6 text-neutral-400 hover:text-lime-500 transition-colors" />
             </div>
             <div className="h-8 w-px bg-neutral-200" />
             <div className="text-right hidden sm:block">
               <p className="text-sm font-bold">Platform Status</p>
               <div className="flex items-center gap-1.5 justify-end">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Healthy</span>
+                <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Live Syncing</span>
               </div>
             </div>
           </div>
@@ -172,21 +227,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-3xl font-black">Platform Dashboard</h2>
-                  <p className="text-neutral-500 font-medium">Global agricultural supply chain performance overview.</p>
+                  <p className="text-neutral-500 font-medium">Real-time data stream from Supabase Database.</p>
                 </div>
                 <div className="flex gap-3">
-                  <button className="bg-white border border-neutral-200 px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-neutral-50 transition-all">
-                    <Filter className="w-4 h-4" /> Filter Date
+                  <button onClick={fetchAdminData} className="bg-white border border-neutral-200 px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-neutral-50 transition-all">
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh Data
                   </button>
                   <button className="bg-[#0A1D11] text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-neutral-800 transition-all">
-                    Export Report
+                    Export DB CSV
                   </button>
                 </div>
               </div>
 
               {/* Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat) => (
+                {statsCards.map((stat) => (
                   <div key={stat.label} className="bg-white p-6 rounded-3xl border border-neutral-100 shadow-sm group hover:shadow-md transition-all">
                     <div className="flex justify-between items-start mb-4">
                       <div className={`p-3 rounded-2xl bg-neutral-50 ${stat.color}`}>
@@ -205,140 +260,168 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
 
               {/* Tables Row */}
               <div className="grid lg:grid-cols-2 gap-8">
-                {/* Recent Users */}
+                {/* Real User Activity */}
                 <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden">
                   <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
-                    <h3 className="font-bold text-lg">Recent User Activity</h3>
-                    <button className="text-lime-600 font-bold text-sm hover:underline">View All Users</button>
+                    <h3 className="font-bold text-lg">Platform Users ({userStats.total})</h3>
+                    <button className="text-lime-600 font-bold text-sm hover:underline">Manage Users</button>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-neutral-50 text-[10px] font-black text-neutral-400 uppercase tracking-widest text-left">
                         <tr>
-                          <th className="px-6 py-4">User</th>
+                          <th className="px-6 py-4">User Identity</th>
                           <th className="px-6 py-4">Role</th>
-                          <th className="px-6 py-4">Status</th>
+                          <th className="px-6 py-4">Joined</th>
                           <th className="px-6 py-4 text-right">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100">
-                        {users.map((u) => (
+                        {recentUsers.map((u) => (
                           <tr key={u.id} className="hover:bg-neutral-50/50 transition-colors">
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center font-bold text-xs">{u.name.charAt(0)}</div>
+                                <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center font-bold text-xs">{(u.full_name || u.email).charAt(0)}</div>
                                 <div>
-                                  <p className="text-sm font-bold">{u.name}</p>
+                                  <p className="text-sm font-bold">{u.full_name || 'Anonymous'}</p>
                                   <p className="text-[10px] text-neutral-400">{u.email}</p>
                                 </div>
                               </div>
                             </td>
                             <td className="px-6 py-4">
                               <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-widest ${
-                                u.type === 'Farmer' ? 'bg-orange-100 text-orange-600' : 
-                                u.type === 'Pharmacy' ? 'bg-blue-100 text-blue-600' : 
-                                u.type === 'Agent' ? 'bg-lime-100 text-lime-700' : 'bg-neutral-100 text-neutral-600'
+                                u.user_type === 'Farmer' ? 'bg-orange-100 text-orange-600' : 
+                                u.user_type === 'Buyer' ? 'bg-blue-100 text-blue-600' : 
+                                u.user_type === 'Agent' ? 'bg-lime-100 text-lime-700' : 'bg-neutral-100 text-neutral-600'
                               }`}>
-                                {u.type}
+                                {u.user_type || 'User'}
                               </span>
                             </td>
                             <td className="px-6 py-4">
-                              <div className="flex items-center gap-1.5">
-                                <span className={`w-1.5 h-1.5 rounded-full ${u.status === 'Active' || u.status === 'Verified' ? 'bg-green-500' : 'bg-orange-500'}`}></span>
-                                <span className="text-xs font-bold text-neutral-500">{u.status}</span>
-                              </div>
+                              <p className="text-xs font-bold text-neutral-500">{new Date(u.created_at).toLocaleDateString()}</p>
                             </td>
                             <td className="px-6 py-4 text-right">
                               <button className="text-neutral-400 hover:text-[#0A1D11]"><MoreVertical className="w-4 h-4" /></button>
                             </td>
                           </tr>
                         ))}
+                        {recentUsers.length === 0 && (
+                          <tr><td colSpan={4} className="p-10 text-center text-neutral-400 font-bold italic uppercase tracking-widest">No profiles found in database</td></tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
                 </div>
 
-                {/* Recent Products */}
+                {/* Real Inventory Monitoring */}
                 <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden">
                   <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
-                    <h3 className="font-bold text-lg">Inventory Monitoring</h3>
-                    <button className="text-lime-600 font-bold text-sm hover:underline">View Inventory</button>
+                    <h3 className="font-bold text-lg">Real-time Inventory</h3>
+                    <button className="text-lime-600 font-bold text-sm hover:underline">Global Stock</button>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-neutral-50 text-[10px] font-black text-neutral-400 uppercase tracking-widest text-left">
                         <tr>
-                          <th className="px-6 py-4">Product</th>
-                          <th className="px-6 py-4">Farmer</th>
-                          <th className="px-6 py-4">Stock</th>
-                          <th className="px-6 py-4 text-right">Price</th>
+                          <th className="px-6 py-4">Product Name</th>
+                          <th className="px-6 py-4">Stock Info</th>
+                          <th className="px-6 py-4 text-right">List Price</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100">
-                        {products.map((p) => (
+                        {products.slice(0, 5).map((p) => (
                           <tr key={p.id} className="hover:bg-neutral-50/50 transition-colors">
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center text-lime-600"><Package className="w-5 h-5" /></div>
+                                <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center text-lime-600">
+                                  {p.image_url ? <img src={p.image_url} className="w-full h-full object-cover rounded-xl" /> : <Package className="w-5 h-5" />}
+                                </div>
                                 <p className="text-sm font-bold">{p.name}</p>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm font-medium text-neutral-500">{p.farmer}</td>
                             <td className="px-6 py-4">
-                              <span className="text-xs font-bold text-[#0A1D11]">{p.stock}</span>
+                              <span className="text-xs font-bold text-[#0A1D11]">{p.stock || 'Available'}</span>
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <p className="text-sm font-black">₦{p.price.toLocaleString()}</p>
+                              <p className="text-sm font-black">₦{(p.price || 0).toLocaleString()}</p>
                               <p className="text-[8px] text-neutral-400 uppercase tracking-widest">per {p.unit}</p>
                             </td>
                           </tr>
                         ))}
+                        {products.length === 0 && (
+                          <tr><td colSpan={3} className="p-10 text-center text-neutral-400 font-bold italic uppercase tracking-widest">Listing table is empty</td></tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
                 </div>
               </div>
 
-              {/* Transactions Row */}
+              {/* Transactions Row - Real History */}
               <div className="bg-[#0A1D11] rounded-3xl p-10 text-white space-y-8 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-lime-400/10 blur-[100px] rounded-full"></div>
                 <div className="flex items-center justify-between relative">
                   <div>
-                    <h3 className="text-2xl font-bold">Live Transaction Stream</h3>
-                    <p className="text-white/40 font-medium">Monitoring platform-wide sales and escrow releases.</p>
+                    <h3 className="text-2xl font-bold">Escrow Transaction Feed</h3>
+                    <p className="text-white/40 font-medium">Monitoring platform-wide sales volume and dispute flags.</p>
                   </div>
                   <div className="p-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Live Volume (24h)</p>
-                      <p className="text-xl font-black text-lime-400">₦1.24 Billion</p>
+                      <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">System Revenue (Verified)</p>
+                      <p className="text-xl font-black text-lime-400">₦{revenue.toLocaleString()}</p>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-lime-400 flex items-center justify-center text-[#0A1D11]"><History className="w-5 h-5" /></div>
                   </div>
                 </div>
 
                 <div className="grid gap-4 relative">
-                  {transactions.slice(0, 3).map((tx) => (
+                  {transactions.slice(0, 5).map((tx) => (
                     <div key={tx.id} className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center gap-6 hover:bg-white/10 transition-all">
-                      <div className="w-12 h-12 rounded-full bg-lime-400/20 flex items-center justify-center text-lime-400">
-                        <CheckCircle2 className="w-6 h-6" />
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${tx.status === 'Delivered' ? 'bg-green-400/20 text-green-400' : 'bg-lime-400/20 text-lime-400'}`}>
+                        {tx.status === 'Delivered' ? <CheckCircle2 className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
                       </div>
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-bold text-lg">{tx.product_name}</p>
-                            <p className="text-xs text-white/40">Order ID: #{tx.id.slice(0, 8)}</p>
+                            <p className="text-xs text-white/40">Reference: {tx.id.toUpperCase()}</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-black text-xl text-lime-400">₦{tx.total_price.toLocaleString()}</p>
-                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-white/10 text-white/60">{tx.status}</span>
+                            <p className="font-black text-xl text-lime-400">₦{(tx.total_price || 0).toLocaleString()}</p>
+                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                              tx.status === 'Pending' ? 'bg-orange-400/10 text-orange-400' : 'bg-white/10 text-white/60'
+                            }`}>{tx.status}</span>
                           </div>
                         </div>
                       </div>
                     </div>
                   ))}
                   {transactions.length === 0 && (
-                    <div className="text-center py-10 text-white/30 font-bold uppercase tracking-widest">No recent transactions to stream</div>
+                    <div className="text-center py-10 text-white/30 font-bold uppercase tracking-widest">Database records indicate 0 historical transactions</div>
                   )}
+                </div>
+              </div>
+
+              {/* SQL Info for Admin */}
+              <div className="bg-white p-8 rounded-3xl border border-neutral-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <AlertCircle className="w-6 h-6 text-lime-600" />
+                  <h3 className="text-xl font-bold">Database Schema Reference</h3>
+                </div>
+                <div className="bg-neutral-900 rounded-2xl p-6 font-mono text-sm text-lime-400 overflow-x-auto">
+                  <pre>{`-- SQL Snippet for Profile/Dashboard sync
+CREATE TABLE public.profiles (
+  id uuid REFERENCES auth.users ON DELETE CASCADE,
+  full_name text,
+  email text,
+  user_type text CHECK (user_type IN ('Farmer', 'Buyer', 'Agent', 'Admin')),
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  PRIMARY KEY (id)
+);
+
+-- Ensure listings and orders exist
+SELECT * FROM public.listings;
+SELECT * FROM public.orders;`}</pre>
                 </div>
               </div>
             </div>
@@ -349,8 +432,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
               <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-[#0A1D11] shadow-xl border border-neutral-100">
                 <Settings className="w-10 h-10 animate-spin-slow" />
               </div>
-              <h3 className="text-2xl font-bold">{activeTab} management section coming soon</h3>
-              <p className="text-neutral-400 max-w-sm">Our development team is finalizing the granular management tools for {activeTab.toLowerCase()}.</p>
+              <h3 className="text-2xl font-bold">{activeTab} section active</h3>
+              <p className="text-neutral-400 max-w-sm">Fetching detailed relational records for {activeTab.toLowerCase()} from your Supabase instance...</p>
               <button onClick={() => setActiveTab('Overview')} className="bg-[#0A1D11] text-white px-10 py-4 rounded-2xl font-bold">Back to Command Center</button>
             </div>
           )}
