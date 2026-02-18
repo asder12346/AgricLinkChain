@@ -87,11 +87,6 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
             </div>
           </div>
         </div>
-
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30 animate-bounce">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Scroll</span>
-          <ChevronDown className="w-6 h-6" />
-        </div>
       </div>
     </div>
   );
