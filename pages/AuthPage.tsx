@@ -21,7 +21,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
   const [agentReferralCode, setAgentReferralCode] = useState('');
 
   useEffect(() => {
-    // Check if we should default to Agent sign up
+    // Check if we should default to Agent sign up from URL params
     const params = new URLSearchParams(window.location.search);
     const role = params.get('role');
     if (role === 'Agent') {
@@ -98,7 +98,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
             <span className="text-2xl font-extrabold tracking-tight text-white">AgriLinkChain</span>
           </div>
           <h2 className="text-3xl font-bold text-white">
-            {activeTab === 'signup' ? (userType === 'Agent' ? 'Agent Onboarding' : userType === 'Admin' ? 'Staff Portal' : 'Create an account') : 'Welcome back'}
+            {activeTab === 'signup' ? (userType === 'Agent' ? 'Agent Onboarding' : 'Create an account') : 'Welcome back'}
           </h2>
           <p className="text-white/60">
             {activeTab === 'signup' ? 'Empowering local and industrial agriculture.' : 'Sign in to manage your activities.'}
@@ -125,6 +125,24 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
             <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl flex items-center gap-3 animate-in fade-in zoom-in duration-300">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <p className="text-sm font-medium">{error}</p>
+            </div>
+          )}
+
+          {activeTab === 'signup' && (
+            <div className="space-y-2 pb-2">
+              <label className="text-xs font-black text-white/40 uppercase tracking-widest">Register As</label>
+              <div className="grid grid-cols-3 gap-3">
+                {['Farmer', 'Buyer', 'Agent'].map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setUserType(type)}
+                    className={`py-3 rounded-xl text-xs font-bold border transition-all ${userType === type ? 'bg-lime-400 border-lime-400 text-[#0A1D11]' : 'bg-white/5 border-white/10 text-white/60 hover:border-white/20'}`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -166,39 +184,20 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
             />
           </div>
 
-          {activeTab === 'signup' && (
-            <>
-              <div className="space-y-2">
-                <label className="text-xs font-black text-white/40 uppercase tracking-widest">Register As</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {['Farmer', 'Buyer', 'Agent', 'Admin'].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setUserType(type)}
-                      className={`py-3 rounded-xl text-sm font-bold border transition-all ${userType === type ? 'bg-lime-400 border-lime-400 text-[#0A1D11]' : 'bg-white/5 border-white/10 text-white/60 hover:border-white/20'}`}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {(userType === 'Farmer') && (
-                <div className="space-y-2 animate-in slide-in-from-top duration-300">
-                  <label className="text-xs font-black text-lime-400 uppercase tracking-widest flex items-center gap-2">
-                    <Hash className="w-4 h-4" /> Agent ID (Optional)
-                  </label>
-                  <input 
-                    type="text" 
-                    value={agentReferralCode}
-                    onChange={(e) => setAgentReferralCode(e.target.value.toUpperCase())}
-                    placeholder="e.g. AGR-1234" 
-                    className="w-full bg-white/5 border border-lime-400/20 rounded-2xl px-6 py-4 focus:border-lime-400 outline-none transition-colors text-white font-mono font-bold tracking-wider" 
-                  />
-                </div>
-              )}
-            </>
+          {activeTab === 'signup' && (userType === 'Farmer') && (
+            <div className="space-y-2 animate-in slide-in-from-top duration-300">
+              <label className="text-xs font-black text-lime-400 uppercase tracking-widest flex items-center gap-2">
+                <Hash className="w-4 h-4" /> Agent ID (Required for tracking)
+              </label>
+              <input 
+                required
+                type="text" 
+                value={agentReferralCode}
+                onChange={(e) => setAgentReferralCode(e.target.value.toUpperCase())}
+                placeholder="e.g. AGR-1234" 
+                className="w-full bg-white/5 border border-lime-400/40 rounded-2xl px-6 py-4 focus:border-lime-400 outline-none transition-colors text-white font-mono font-bold tracking-wider" 
+              />
+            </div>
           )}
 
           <button 
@@ -206,7 +205,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
             type="submit"
             className="w-full bg-lime-400 text-[#0A1D11] py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 hover:bg-lime-300 transition-all transform hover:translate-y-[-2px] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-lime-400/10"
           >
-            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (activeTab === 'signup' ? (userType === 'Admin' ? 'Access Staff Portal' : 'Create Account') : 'Sign In')}
+            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (activeTab === 'signup' ? 'Create Account' : 'Sign In')}
           </button>
         </form>
 
