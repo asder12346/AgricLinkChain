@@ -23,17 +23,13 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for admin path in URL
-    if (window.location.pathname === '/admin-dashboard') {
-      setView('admin-dashboard');
-    }
-
     // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        // Only set view to dashboard if we're not on admin-dashboard already
-        if (window.location.pathname !== '/admin-dashboard') {
+        if (window.location.pathname === '/admin-dashboard') {
+          setView('admin-dashboard');
+        } else {
           setView('dashboard');
         }
       }
@@ -44,17 +40,30 @@ const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
-        if (window.location.pathname !== '/admin-dashboard') {
+        if (window.location.pathname === '/admin-dashboard') {
+          setView('admin-dashboard');
+        } else {
           setView('dashboard');
         }
       } else {
         setUser(null);
-        if (view === 'dashboard' || view === 'admin-dashboard') setView('landing');
+        setView('landing');
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Effect to prevent logged-in users from seeing the landing page
+  useEffect(() => {
+    if (!loading && user && view === 'landing') {
+      if (window.location.pathname === '/admin-dashboard') {
+        setView('admin-dashboard');
+      } else {
+        setView('dashboard');
+      }
+    }
+  }, [user, view, loading]);
 
   if (loading) {
     return (
@@ -66,7 +75,7 @@ const App: React.FC = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setView('landing');
+    // Auth listener handles view reset to 'landing'
   };
 
   const handleJoin = (role: string = 'Farmer') => {
@@ -79,12 +88,11 @@ const App: React.FC = () => {
   }
 
   if (view === 'admin-dashboard') {
-    // In a real app, you'd check if user.user_metadata.user_type === 'Admin'
     return <AdminDashboard onSignOut={handleSignOut} />;
   }
 
   if (view === 'dashboard' && user) {
-    return <Dashboard user={user} onSignOut={handleSignOut} onGoHome={() => setView('landing')} />;
+    return <Dashboard user={user} onSignOut={handleSignOut} onGoHome={() => {}} />;
   }
 
   return (

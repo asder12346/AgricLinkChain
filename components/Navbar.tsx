@@ -26,7 +26,7 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
     { name: 'Marketplace', href: '#marketplace' },
     { name: 'Impact', href: '#impact' },
     { name: 'Stories', href: '#stories' },
-    { name: 'FAQ', href: '#faq' },
+    { name: 'Explore', href: '#marketplace' },
   ];
 
   const handleLogout = async () => {
@@ -38,10 +38,6 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
     const el = document.querySelector(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      // If we are on a different page/view, we might need a different strategy,
-      // but assuming landing page scrolling for these specific links.
-      window.location.hash = id;
     }
   };
 
@@ -73,7 +69,7 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
               <div className="flex items-center gap-5">
                 <button 
                   onClick={onGoDashboard}
-                  className="flex items-center gap-2.5 bg-lime-400/10 text-lime-400 border border-lime-400/20 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-lime-400 hover:text-[#0A1D11] transition-all shadow-xl shadow-lime-400/5"
+                  className="flex items-center gap-2.5 bg-lime-400/10 text-lime-400 border border-lime-400/20 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-lime-400 hover:text-[#0A1D11] transition-all shadow-xl"
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   Dashboard
