@@ -104,7 +104,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
   };
 
   const userRole = profile?.user_type || user.user_metadata?.user_type;
-  const isVerified = true; // For demo aesthetics, everyone in dashboard is verified
+  const isVerified = true; // Simulating verification for dashboard aesthetics
 
   const menuItems = [
     { name: 'Overview', icon: LayoutDashboard },
@@ -118,7 +118,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
     return (
       <div className="min-h-screen bg-[#0A1D11] flex flex-col items-center justify-center gap-6">
         <Loader2 className="w-12 h-12 text-lime-400 animate-spin" />
-        <p className="text-white/40 font-black uppercase tracking-widest text-[10px]">Syncing Secure Chain...</p>
+        <p className="text-white/40 font-black uppercase tracking-widest text-[10px]">Authorizing Secure Session...</p>
       </div>
     );
   }

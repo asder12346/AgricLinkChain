@@ -8,12 +8,12 @@ const LogoCloud: React.FC = () => {
   ];
 
   return (
-    <div className="py-16 bg-white border-y border-neutral-100 overflow-hidden whitespace-nowrap">
+    <div className="py-20 bg-[#0A1D11] border-y border-white/5 overflow-hidden whitespace-nowrap relative">
       <div className="flex animate-marquee">
         {logos.map((logo, idx) => (
           <div key={idx} className="flex items-center mx-16">
-            <span className="text-3xl font-black text-[#0A1D11]/20 tracking-tighter flex items-center gap-3 group cursor-pointer hover:text-lime-600 transition-colors">
-              <span className="w-2.5 h-2.5 rounded-full bg-lime-400 group-hover:scale-125 transition-transform"></span>
+            <span className="text-4xl font-black text-white/40 tracking-tighter flex items-center gap-4 group cursor-pointer hover:text-white transition-all duration-500">
+              <span className="w-2.5 h-2.5 rounded-full bg-lime-400 group-hover:scale-150 transition-transform shadow-lg shadow-lime-400/50"></span>
               {logo}
             </span>
           </div>
@@ -26,14 +26,7 @@ const LogoCloud: React.FC = () => {
           100% { transform: translateX(-50%); }
         }
         .animate-marquee {
-          animation: marquee 40s linear infinite;
-        }
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        .animate-bounce-slow {
-          animation: bounce-slow 3s ease-in-out infinite;
+          animation: marquee 30s linear infinite;
         }
       `}</style>
     </div>
