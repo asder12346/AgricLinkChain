@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Leaf, ArrowLeft, Loader2, AlertCircle, Hash, CheckCircle2 } from 'lucide-react';
+import { Leaf, ArrowLeft, Loader2, AlertCircle, Hash, CheckCircle2, Ruler, MapPin, Sprout } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface AuthPageProps {
@@ -20,6 +20,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
   const [fullName, setFullName] = useState('');
   const [userType, setUserType] = useState(initialType);
   const [agentReferralCode, setAgentReferralCode] = useState('');
+  
+  // Agricultural Data States
+  const [farmSize, setFarmSize] = useState('');
+  const [farmLocation, setFarmLocation] = useState('');
+  const [cropsFarming, setCropsFarming] = useState('');
 
   const generateReferralCode = (name: string) => {
     const prefix = name.substring(0, 3).toUpperCase();
@@ -45,21 +50,20 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
               user_type: userType,
               referral_code: referralCode,
               referred_by: (userType === 'Farmer' || userType === 'Buyer') ? agentReferralCode : null,
+              farm_size: farmSize,
+              farm_location: farmLocation,
+              crops_farming: cropsFarming,
+              verified: true // Simulating verification for demo purposes after data completion
             },
           },
         });
 
         if (authError) throw authError;
         
-        // Success state for smooth transition
         setSuccess(true);
-        setTimeout(() => {
-          // The App listener will automatically switch to Dashboard view
-        }, 1500);
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
-        // The App listener handles the view change
       }
     } catch (err: any) {
       setError(err.message || 'Authentication error');
@@ -76,7 +80,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
            </div>
            <div className="space-y-2">
              <h2 className="text-3xl font-bold text-white">Welcome Aboard!</h2>
-             <p className="text-white/60">Your agricultural journey starts now. Redirecting...</p>
+             <p className="text-white/60">Your agricultural profile is ready. Redirecting...</p>
            </div>
            <Loader2 className="w-6 h-6 text-lime-400 animate-spin mx-auto" />
         </div>
@@ -90,7 +94,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
         <ArrowLeft className="w-5 h-5" /> Back Home
       </button>
 
-      <div className="max-w-md w-full space-y-8 bg-[#0D2517] p-8 md:p-12 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden">
+      <div className={`w-full ${activeTab === 'signup' && (userType === 'Farmer' || userType === 'Buyer') ? 'max-w-4xl' : 'max-w-md'} space-y-8 bg-[#0D2517] p-8 md:p-12 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden transition-all duration-500`}>
         <div className="absolute -top-12 -right-12 w-32 h-32 bg-lime-400/10 blur-[60px] rounded-full"></div>
         
         <div className="text-center space-y-4 relative">
@@ -103,8 +107,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
           </h2>
         </div>
 
-        <form className="space-y-6 relative" onSubmit={handleAuth}>
-          {error && <div className="bg-red-500/10 text-red-500 p-4 rounded-xl text-sm border border-red-500/20 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+        <form className="space-y-8 relative" onSubmit={handleAuth}>
+          {error && <div className="bg-red-500/10 text-red-500 p-4 rounded-xl text-sm border border-red-500/20 flex items-center gap-2">
             <AlertCircle className="w-4 h-4" /> {error}
           </div>}
 
@@ -126,35 +130,58 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
             </div>
           )}
 
-          {activeTab === 'signup' && (
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Full Name / Business</label>
-              <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Ibrahim Musa" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400 transition-colors" />
-            </div>
-          )}
+          <div className={`grid ${activeTab === 'signup' && (userType === 'Farmer' || userType === 'Buyer') ? 'md:grid-cols-2' : 'grid-cols-1'} gap-8`}>
+            <div className="space-y-6">
+              {activeTab === 'signup' && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Full Name / Business Entity</label>
+                  <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Ibrahim Musa" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400 transition-colors" />
+                </div>
+              )}
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Email Address</label>
-            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@domain.com" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400 transition-colors" />
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Email Identity</label>
+                <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@domain.com" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400 transition-colors" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Password Secure</label>
+                <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400 transition-colors" />
+              </div>
+            </div>
+
+            {activeTab === 'signup' && (userType === 'Farmer' || userType === 'Buyer') && (
+              <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-2"><Ruler className="w-3 h-3" /> Operation Size ({userType === 'Farmer' ? 'Hectares' : 'Sqm'})</label>
+                    <input required type="number" value={farmSize} onChange={(e) => setFarmSize(e.target.value)} placeholder="e.g. 100" className="w-full bg-white/5 border border-lime-400/20 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400" />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-2"><MapPin className="w-3 h-3" /> Specific {userType === 'Farmer' ? 'Farm' : 'Warehouse'} Location</label>
+                    <input required type="text" value={farmLocation} onChange={(e) => setFarmLocation(e.target.value)} placeholder="State, Region" className="w-full bg-white/5 border border-lime-400/20 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400" />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-2"><Sprout className="w-3 h-3" /> Primary Crops (Current)</label>
+                    <input required type="text" value={cropsFarming} onChange={(e) => setCropsFarming(e.target.value)} placeholder="e.g. Cocoa, Cassava" className="w-full bg-white/5 border border-lime-400/20 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400" />
+                 </div>
+              </div>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Password</label>
-            <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400 transition-colors" />
+          <div className="space-y-6">
+            {activeTab === 'signup' && (userType === 'Farmer' || userType === 'Buyer') && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
+                  <Hash className="w-3 h-3" /> Agent Recruitment Code
+                </label>
+                <input type="text" value={agentReferralCode} onChange={(e) => setAgentReferralCode(e.target.value.toUpperCase())} placeholder="e.g. AGR-1234" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400 font-mono font-bold tracking-wider" />
+              </div>
+            )}
+
+            <button disabled={loading} type="submit" className="w-full bg-lime-400 text-[#0A1D11] py-5 rounded-2xl font-black text-lg hover:bg-lime-300 transition-all flex items-center justify-center gap-3 shadow-xl shadow-lime-400/10">
+              {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (activeTab === 'signup' ? 'Initialize Profile' : 'Authenticate')}
+            </button>
           </div>
-
-          {activeTab === 'signup' && (userType === 'Farmer' || userType === 'Buyer') && (
-            <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-              <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-2">
-                <Hash className="w-3 h-3" /> Agent Referral ID
-              </label>
-              <input type="text" value={agentReferralCode} onChange={(e) => setAgentReferralCode(e.target.value.toUpperCase())} placeholder="e.g. AGR-1234 (Optional)" className="w-full bg-white/5 border border-lime-400/30 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400 font-mono font-bold tracking-wider" />
-            </div>
-          )}
-
-          <button disabled={loading} type="submit" className="w-full bg-lime-400 text-[#0A1D11] py-5 rounded-2xl font-black text-lg hover:bg-lime-300 transition-all flex items-center justify-center gap-3 shadow-xl shadow-lime-400/10">
-            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (activeTab === 'signup' ? 'Create Account' : 'Sign In Now')}
-          </button>
         </form>
 
         <div className="flex justify-center pt-4">

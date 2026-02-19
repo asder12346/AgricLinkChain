@@ -5,7 +5,8 @@ import {
   LogOut, Leaf, Plus, TrendingUp, Clock, Menu, X, Settings,
   Trash2, RefreshCw, Users, Loader2, Save, ShoppingBag, Box, Image as ImageIcon,
   PlusCircle, CheckCircle2, Edit2, Calendar, MapPin, ExternalLink, Wallet, CreditCard,
-  ChevronRight, ArrowLeft, Truck, Star, ShieldCheck, UserPlus, Share2, Copy
+  ChevronRight, ArrowLeft, Truck, Star, ShieldCheck, UserPlus, Share2, Copy, Camera, Upload, 
+  Sprout, Ruler, Info
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -25,6 +26,18 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
   const [loading, setLoading] = useState(true);
   const [isAddingListing, setIsAddingListing] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Profile Form State
+  const [editProfile, setEditProfile] = useState({
+    full_name: '',
+    location: '',
+    farm_size: '',
+    farm_location: '',
+    crops_farming: '',
+    crops_planting: ''
+  });
 
   // Checkout State
   const [checkoutProduct, setCheckoutProduct] = useState<any>(null);
@@ -40,6 +53,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
     try {
       const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       setProfile(prof);
+      if (prof) {
+        setEditProfile({
+          full_name: prof.full_name || '',
+          location: prof.location || '',
+          farm_size: prof.farm_size || '',
+          farm_location: prof.farm_location || '',
+          crops_farming: prof.crops_farming || '',
+          crops_planting: prof.crops_planting || ''
+        });
+      }
 
       const userRole = prof?.user_type || user.user_metadata?.user_type;
 
@@ -73,6 +96,60 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
     }
   };
 
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(editProfile)
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      alert('Profile updated successfully!');
+      fetchProfileAndData();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      if (!e.target.files || e.target.files.length === 0) return;
+      const file = e.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+      
+      await fetchProfileAndData();
+      alert('Profile picture updated successfully!');
+    } catch (err: any) {
+      alert(err.message || 'Error uploading avatar.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsOrdering(true);
@@ -88,7 +165,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
         status: 'Pending'
       }]);
       if (error) throw error;
-      alert('Order placed successfully! The farmer will contact you for delivery details.');
+      alert('Order placed successfully!');
       setCheckoutProduct(null);
       setActiveTab('My Orders');
       fetchProfileAndData();
@@ -100,6 +177,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
   };
 
   const userRole = profile?.user_type || user.user_metadata?.user_type;
+  const isVerified = profile?.verified || false;
+
   const menuItems = [
     { name: 'Overview', icon: LayoutDashboard },
     ...(userRole === 'Agent' ? [{ name: 'My Network', icon: Users }] : []),
@@ -174,11 +253,27 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
           
           <div className="flex items-center gap-4">
              <div className="text-right hidden sm:block">
-               <p className="text-[10px] font-black uppercase text-neutral-400 tracking-widest">{userRole}</p>
+               <div className="flex items-center gap-1.5 justify-end">
+                  <p className="text-[10px] font-black uppercase text-neutral-400 tracking-widest">{userRole}</p>
+                  {isVerified && (
+                    <div className="bg-lime-400 p-0.5 rounded-full" title="Verified Member">
+                      <CheckCircle2 className="w-2.5 h-2.5 text-[#0A1D11]" />
+                    </div>
+                  )}
+               </div>
                <p className="text-sm font-bold">{profile?.full_name}</p>
              </div>
-             <div className="w-12 h-12 rounded-[1.25rem] bg-lime-100 flex items-center justify-center font-black text-lime-700 border-2 border-white shadow-sm overflow-hidden">
-               {profile?.full_name?.charAt(0)}
+             <div className="w-12 h-12 rounded-[1.25rem] bg-lime-100 flex items-center justify-center font-black text-lime-700 border-2 border-white shadow-sm overflow-hidden relative group">
+               {profile?.avatar_url ? (
+                 <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Profile" />
+               ) : (
+                 profile?.full_name?.charAt(0)
+               )}
+               {uploading && (
+                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                 </div>
+               )}
              </div>
           </div>
         </header>
@@ -188,23 +283,21 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
             <div className="space-y-12 animate-in fade-in duration-500">
                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                  <div>
-                   <h2 className="text-4xl font-black text-[#0A1D11] tracking-tight">Welcome, {profile?.full_name?.split(' ')[0]}!</h2>
+                   <div className="flex items-center gap-3">
+                    <h2 className="text-4xl font-black text-[#0A1D11] tracking-tight">Welcome, {profile?.full_name?.split(' ')[0]}!</h2>
+                    {isVerified && (
+                      <div className="bg-lime-400 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg shadow-lime-400/20">
+                         <ShieldCheck className="w-3.5 h-3.5 text-[#0A1D11]" />
+                         <span className="text-[10px] font-black uppercase tracking-widest text-[#0A1D11]">Verified Member</span>
+                      </div>
+                    )}
+                   </div>
                    <p className="text-neutral-500 font-medium mt-1">Platform status is live. 1.2k active nodes secured.</p>
                  </div>
                  {userRole === 'Farmer' && (
                    <button onClick={() => setIsAddingListing(true)} className="bg-[#0A1D11] text-white px-10 py-5 rounded-[2rem] font-black flex items-center gap-3 shadow-2xl hover:scale-105 active:scale-95 transition-all">
                      <PlusCircle className="w-5 h-5 text-lime-400" /> New Inventory
                    </button>
-                 )}
-                 {userRole === 'Buyer' && (
-                    <button onClick={() => setActiveTab('Marketplace')} className="bg-lime-400 text-[#0A1D11] px-10 py-5 rounded-[2rem] font-black flex items-center gap-3 shadow-2xl hover:scale-105 active:scale-95 transition-all">
-                      <ShoppingBag className="w-5 h-5" /> Start Trading
-                    </button>
-                 )}
-                 {userRole === 'Agent' && (
-                    <button onClick={() => setActiveTab('My Network')} className="bg-[#0A1D11] text-white px-10 py-5 rounded-[2rem] font-black flex items-center gap-3 shadow-2xl hover:scale-105 active:scale-95 transition-all">
-                      <UserPlus className="w-5 h-5 text-lime-400" /> Recruit Member
-                    </button>
                  )}
                </div>
 
@@ -227,63 +320,133 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                  </div>
                </div>
 
-               <div className="grid lg:grid-cols-3 gap-10">
-                  <div className="lg:col-span-2 bg-white rounded-[3rem] p-10 border border-neutral-100 shadow-sm">
-                    <div className="flex items-center justify-between mb-8">
-                      <h3 className="text-2xl font-black">Trade Records</h3>
-                      <button onClick={fetchProfileAndData} className="p-3 bg-neutral-50 rounded-2xl hover:bg-neutral-100 transition-colors">
-                        <RefreshCw className="w-5 h-5 text-neutral-300" />
-                      </button>
+               {/* New Detail Card for Agricultural Data */}
+               <div className="bg-white rounded-[3rem] p-10 border border-neutral-100 shadow-sm relative overflow-hidden">
+                 <div className="flex items-center justify-between mb-8">
+                    <div className="space-y-1">
+                       <h3 className="text-2xl font-black text-[#0A1D11]">Agricultural Footprint</h3>
+                       <p className="text-neutral-400 text-xs font-bold uppercase tracking-widest">Registered Farming Metrics</p>
                     </div>
-                    {orders.length === 0 ? (
-                      <div className="py-20 text-center space-y-4 bg-neutral-50 rounded-[2rem] border border-dashed border-neutral-200">
-                         <Box className="w-12 h-12 text-neutral-200 mx-auto" />
-                         <p className="text-neutral-400 font-bold uppercase tracking-widest text-[10px]">No historical data found</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {orders.slice(0, 4).map(order => (
-                          <div key={order.id} className="flex items-center justify-between p-6 bg-neutral-50 rounded-[2rem] border border-neutral-100 hover:border-lime-400/30 transition-all cursor-pointer">
-                            <div className="flex items-center gap-4">
-                               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-lime-600 shadow-sm"><Package className="w-6 h-6" /></div>
-                               <div>
-                                 <p className="font-black text-sm">{order.product_name}</p>
-                                 <p className="text-[10px] uppercase font-black text-neutral-400 mt-0.5">{new Date(order.created_at).toLocaleDateString()}</p>
-                               </div>
+                    <button onClick={() => setActiveTab('Profile')} className="p-3 bg-neutral-50 rounded-2xl hover:bg-neutral-100 transition-colors text-lime-600">
+                       <Edit2 className="w-5 h-5" />
+                    </button>
+                 </div>
+                 <div className="grid md:grid-cols-4 gap-8">
+                    <div className="space-y-2">
+                       <div className="flex items-center gap-2 text-neutral-400 font-black text-[10px] uppercase tracking-widest"><Ruler className="w-3.5 h-3.5 text-lime-600" /> Farm Size</div>
+                       <p className="text-lg font-black text-[#0A1D11]">{profile?.farm_size || 'N/A'} Hectares</p>
+                    </div>
+                    <div className="space-y-2">
+                       <div className="flex items-center gap-2 text-neutral-400 font-black text-[10px] uppercase tracking-widest"><MapPin className="w-3.5 h-3.5 text-lime-600" /> Operation Base</div>
+                       <p className="text-lg font-black text-[#0A1D11]">{profile?.farm_location || 'Not Set'}</p>
+                    </div>
+                    <div className="space-y-2">
+                       <div className="flex items-center gap-2 text-neutral-400 font-black text-[10px] uppercase tracking-widest"><Sprout className="w-3.5 h-3.5 text-lime-600" /> Active Crops</div>
+                       <p className="text-lg font-black text-[#0A1D11]">{profile?.crops_farming || 'No active crops'}</p>
+                    </div>
+                    <div className="space-y-2">
+                       <div className="flex items-center gap-2 text-neutral-400 font-black text-[10px] uppercase tracking-widest"><Calendar className="w-3.5 h-3.5 text-lime-600" /> Upcoming Cycle</div>
+                       <p className="text-lg font-black text-[#0A1D11]">{profile?.crops_planting || 'TBD'}</p>
+                    </div>
+                 </div>
+               </div>
+            </div>
+          )}
+
+          {activeTab === 'Profile' && (
+            <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <form onSubmit={handleUpdateProfile} className="bg-white rounded-[3.5rem] p-10 md:p-20 border border-neutral-100 shadow-sm relative overflow-hidden space-y-16">
+                 <div className="absolute top-0 right-0 w-80 h-80 bg-lime-400/5 blur-[120px] -mr-32 -mt-32"></div>
+                 
+                 <div className="flex flex-col md:flex-row items-center gap-12 relative z-10">
+                    <div className="relative group">
+                       <div className="w-48 h-48 rounded-[3.5rem] bg-neutral-100 flex items-center justify-center font-black text-6xl text-neutral-300 border-[6px] border-white shadow-2xl overflow-hidden">
+                          {profile?.avatar_url ? (
+                            <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Profile" />
+                          ) : (
+                            profile?.full_name?.charAt(0)
+                          )}
+                          {uploading && (
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                               <Loader2 className="w-10 h-10 text-white animate-spin" />
                             </div>
-                            <div className="text-right">
-                               <p className="font-black text-sm text-[#0A1D11]">₦{order.total_price.toLocaleString()}</p>
-                               <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase mt-1 inline-block ${order.status === 'Pending' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>{order.status}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="bg-[#0D2517] p-10 rounded-[3rem] text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-lime-400/5 blur-[80px] -mr-24 -mt-24"></div>
-                    <h3 className="text-2xl font-black mb-8 relative z-10">Ag-Hub News</h3>
-                    <div className="space-y-6 relative z-10">
-                      {upcomingEvents.map(ev => (
-                        <div key={ev.id} className="flex gap-5 items-start p-6 bg-white/5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-all cursor-pointer group">
-                          <div className="p-3 bg-lime-400/10 text-lime-400 rounded-2xl group-hover:scale-110 transition-transform">{ev.icon}</div>
-                          <div className="space-y-1">
-                             <p className="font-bold text-sm group-hover:text-lime-400 transition-colors">{ev.title}</p>
-                             <div className="flex items-center gap-3">
-                                <span className="text-[10px] text-white/30 uppercase font-black">{ev.date}</span>
-                                <span className="w-1 h-1 bg-white/10 rounded-full"></span>
-                                <span className="text-[10px] text-white/30 uppercase font-black">{ev.type}</span>
+                          )}
+                       </div>
+                       <label className="absolute -bottom-4 -right-4 p-5 bg-lime-400 text-[#0A1D11] rounded-[1.75rem] shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer border-[6px] border-white">
+                          <Camera className="w-8 h-8" />
+                          <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} />
+                       </label>
+                    </div>
+
+                    <div className="flex-1 space-y-6 text-center md:text-left">
+                       <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                          <h2 className="text-5xl font-black text-[#0A1D11] tracking-tight">{profile?.full_name}</h2>
+                          {isVerified && (
+                             <div className="bg-lime-400 text-[#0A1D11] px-4 py-1.5 rounded-full flex items-center gap-2 shadow-xl shadow-lime-400/20">
+                                <ShieldCheck className="w-4 h-4" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Verified Stakeholder</span>
+                             </div>
+                          )}
+                       </div>
+                       <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                          <span className="bg-[#0A1D11] text-white px-8 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">{userRole} Identity</span>
+                          <span className="bg-neutral-100 text-neutral-400 px-8 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest">Member ID: #{profile?.id?.slice(0,8)}</span>
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="grid md:grid-cols-2 gap-12 relative z-10">
+                    <div className="space-y-10">
+                       <div className="space-y-4">
+                          <h4 className="text-[11px] font-black text-lime-600 uppercase tracking-[0.2em] flex items-center gap-2"><Info className="w-3.5 h-3.5" /> Identity & Logistics</h4>
+                          <div className="space-y-6">
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Legal Name / Entity</label>
+                                <input type="text" value={editProfile.full_name} onChange={(e) => setEditProfile({...editProfile, full_name: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 rounded-[1.5rem] px-8 py-5 text-sm font-bold focus:border-lime-400 outline-none transition-all" />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">General Location</label>
+                                <input type="text" value={editProfile.location} onChange={(e) => setEditProfile({...editProfile, location: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 rounded-[1.5rem] px-8 py-5 text-sm font-bold focus:border-lime-400 outline-none transition-all" />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Registered Farm/Warehouse Location</label>
+                                <input type="text" value={editProfile.farm_location} onChange={(e) => setEditProfile({...editProfile, farm_location: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 rounded-[1.5rem] px-8 py-5 text-sm font-bold focus:border-lime-400 outline-none transition-all" />
                              </div>
                           </div>
-                        </div>
-                      ))}
+                       </div>
                     </div>
-                    <button className="w-full mt-10 py-5 bg-white/5 text-white/60 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all border border-white/5">
-                      Open Newsroom
-                    </button>
-                  </div>
-               </div>
+
+                    <div className="space-y-10">
+                       <div className="space-y-4">
+                          <h4 className="text-[11px] font-black text-lime-600 uppercase tracking-[0.2em] flex items-center gap-2"><Sprout className="w-3.5 h-3.5" /> Agricultural Metrics</h4>
+                          <div className="space-y-6">
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Operational Size (Hectares / Sqm)</label>
+                                <input type="text" value={editProfile.farm_size} onChange={(e) => setEditProfile({...editProfile, farm_size: e.target.value})} placeholder="e.g. 50" className="w-full bg-neutral-50 border border-neutral-100 rounded-[1.5rem] px-8 py-5 text-sm font-bold focus:border-lime-400 outline-none transition-all" />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Crops Currently Farming / Handling</label>
+                                <input type="text" value={editProfile.crops_farming} onChange={(e) => setEditProfile({...editProfile, crops_farming: e.target.value})} placeholder="e.g. Maize, Cassava" className="w-full bg-neutral-50 border border-neutral-100 rounded-[1.5rem] px-8 py-5 text-sm font-bold focus:border-lime-400 outline-none transition-all" />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Upcoming Cycle / Planting Plans</label>
+                                <input type="text" value={editProfile.crops_planting} onChange={(e) => setEditProfile({...editProfile, crops_planting: e.target.value})} placeholder="e.g. Cocoa Expansion" className="w-full bg-neutral-50 border border-neutral-100 rounded-[1.5rem] px-8 py-5 text-sm font-bold focus:border-lime-400 outline-none transition-all" />
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="pt-10 border-t border-neutral-100 flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+                    <p className="text-neutral-400 text-xs font-medium max-w-sm text-center md:text-left italic">By keeping your footprint updated, you ensure the highest accuracy for trade matchmaking on the AgriLink network.</p>
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                       <button type="button" onClick={onSignOut} className="flex-1 md:flex-none px-10 py-5 bg-red-50 text-red-500 rounded-[1.5rem] font-black text-xs uppercase tracking-widest hover:bg-red-100 transition-all">Sign Out</button>
+                       <button type="submit" disabled={saving} className="flex-1 md:flex-none px-12 py-5 bg-[#0A1D11] text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-lime-400 hover:text-[#0A1D11] transition-all shadow-2xl">
+                          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> Synchronize Profile</>}
+                       </button>
+                    </div>
+                 </div>
+              </form>
             </div>
           )}
 
@@ -329,7 +492,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                                    <tr key={entity.id} className="hover:bg-neutral-50/50 transition-colors">
                                       <td className="px-8 py-6">
                                          <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center font-black text-[#0A1D11]">{entity.full_name?.charAt(0)}</div>
+                                            <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center font-black text-[#0A1D11]">
+                                              {entity.avatar_url ? <img src={entity.avatar_url} className="w-full h-full object-cover rounded-xl" /> : entity.full_name?.charAt(0)}
+                                            </div>
                                             <div>
                                                <p className="font-bold text-sm">{entity.full_name}</p>
                                                <p className="text-[10px] text-neutral-400 font-mono">{entity.id.slice(0,8)}</p>
@@ -347,39 +512,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                                       <td className="px-8 py-6 text-right text-xs font-black text-lime-600">Verified</td>
                                    </tr>
                                 ))}
-                                {onboardedEntities.length === 0 && (
-                                   <tr>
-                                      <td colSpan={4} className="p-32 text-center text-neutral-300">
-                                         <Users className="w-16 h-16 mx-auto mb-6 opacity-10" />
-                                         <p className="font-black uppercase tracking-[0.2em] text-[10px]">Your network is ready to grow</p>
-                                      </td>
-                                   </tr>
-                                )}
                              </tbody>
                           </table>
                        </div>
                     </div>
-                  </div>
-
-                  <div className="space-y-8">
-                     <div className="bg-[#0A1D11] p-10 rounded-[3rem] text-white space-y-8 shadow-2xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-lime-400/5 blur-[80px] -mr-16 -mt-16 group-hover:bg-lime-400/10 transition-all"></div>
-                        <h4 className="text-xl font-black">Agent Resources</h4>
-                        <div className="space-y-4">
-                           <div className="p-6 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-4">
-                              <div className="p-3 bg-lime-400/10 text-lime-400 rounded-xl"><Share2 className="w-5 h-5" /></div>
-                              <div><p className="text-sm font-bold">Marketing Kits</p><p className="text-[10px] text-white/30 font-black uppercase">Download visuals</p></div>
-                           </div>
-                           <div className="p-6 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-4">
-                              <div className="p-3 bg-blue-400/10 text-blue-400 rounded-xl"><Box className="w-5 h-5" /></div>
-                              <div><p className="text-sm font-bold">Stakeholder Perks</p><p className="text-[10px] text-white/30 font-black uppercase">Benefits list</p></div>
-                           </div>
-                        </div>
-                        <div className="pt-6 border-t border-white/10 space-y-4">
-                           <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest">Commission Logic</p>
-                           <p className="text-xs text-white/40 leading-relaxed font-medium">Earn 2% of transaction volume for every farmer and buyer onboarded through your unique digital ID.</p>
-                        </div>
-                     </div>
                   </div>
                </div>
             </div>
@@ -433,153 +569,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {checkoutProduct && (
-            <div className="fixed inset-0 z-50 bg-[#0A1D11]/95 backdrop-blur-xl flex items-center justify-center p-4">
-              <div className="bg-white w-full max-w-5xl rounded-[4rem] overflow-hidden shadow-2xl animate-in zoom-in duration-500 border border-white/20">
-                 <div className="grid lg:grid-cols-5 h-full max-h-[90vh]">
-                    <div className="lg:col-span-2 bg-[#F8FAF9] p-10 lg:p-14 flex flex-col justify-between border-r border-neutral-100 overflow-y-auto">
-                       <div className="space-y-10">
-                         <button onClick={() => setCheckoutProduct(null)} className="flex items-center gap-2 text-neutral-400 hover:text-[#0A1D11] font-black text-[10px] uppercase tracking-widest transition-colors">
-                            <ArrowLeft className="w-4 h-4" /> Go Back to Marketplace
-                         </button>
-                         <div className="space-y-6">
-                            <div className="w-20 h-20 rounded-[1.5rem] bg-lime-400 flex items-center justify-center shadow-xl shadow-lime-400/20">
-                               <Package className="w-10 h-10 text-[#0A1D11]" />
-                            </div>
-                            <div className="space-y-2">
-                               <h3 className="text-4xl font-black text-[#0A1D11] leading-tight">{checkoutProduct.name}</h3>
-                               <p className="text-neutral-500 font-bold flex items-center gap-2 uppercase tracking-widest text-xs">
-                                 <ShieldCheck className="w-4 h-4 text-lime-600" /> Verified Batch ID: #{checkoutProduct.id.slice(0,8)}
-                               </p>
-                            </div>
-                         </div>
-                         <div className="space-y-6">
-                            <div className="p-6 bg-white rounded-3xl border border-neutral-200 flex items-center gap-5">
-                               <div className="w-12 h-12 bg-lime-50 rounded-2xl flex items-center justify-center text-lime-600"><Truck className="w-6 h-6" /></div>
-                               <div><p className="font-bold text-sm">Insured Delivery</p><p className="text-[10px] text-neutral-400 font-bold uppercase">Lagos Agri-Hub Partner</p></div>
-                            </div>
-                            <div className="p-6 bg-white rounded-3xl border border-neutral-200 flex items-center gap-5">
-                               <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600"><CreditCard className="w-6 h-6" /></div>
-                               <div><p className="font-bold text-sm">Escrow Secure</p><p className="text-[10px] text-neutral-400 font-bold uppercase">7-Day Quality Guarantee</p></div>
-                            </div>
-                         </div>
-                       </div>
-                       <div className="mt-12">
-                          <img src={checkoutProduct.image_url} className="w-full h-56 object-cover rounded-[2.5rem] shadow-lg grayscale hover:grayscale-0 transition-all duration-700" />
-                       </div>
-                    </div>
-                    <div className="lg:col-span-3 p-10 lg:p-20 space-y-12 overflow-y-auto">
-                       <div className="space-y-8">
-                          <h4 className="text-xs font-black uppercase text-neutral-400 tracking-widest border-b border-neutral-100 pb-4">Checkout Configuration</h4>
-                          <div className="grid md:grid-cols-2 gap-10">
-                            <div className="space-y-3">
-                               <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Select Quantity ({checkoutProduct.unit})</label>
-                               <div className="flex items-center justify-between bg-neutral-100 rounded-[1.5rem] p-3 border border-neutral-200">
-                                  <button onClick={() => setOrderQty(Math.max(1, orderQty - 1))} className="w-12 h-12 bg-white rounded-xl font-black text-xl flex items-center justify-center hover:bg-neutral-50 transition-colors shadow-sm">-</button>
-                                  <span className="font-black text-2xl px-6">{orderQty}</span>
-                                  <button onClick={() => setOrderQty(orderQty + 1)} className="w-12 h-12 bg-white rounded-xl font-black text-xl flex items-center justify-center hover:bg-neutral-50 transition-colors shadow-sm">+</button>
-                               </div>
-                            </div>
-                            <div className="space-y-3">
-                               <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Base Rate</label>
-                               <div className="bg-neutral-50 rounded-[1.5rem] p-6 border border-neutral-100 text-center">
-                                  <p className="font-black text-2xl text-[#0A1D11]">₦{checkoutProduct.price.toLocaleString()}</p>
-                                  <p className="text-[10px] font-bold text-neutral-300 uppercase">per unit</p>
-                               </div>
-                            </div>
-                          </div>
-                       </div>
-                       <div className="space-y-6">
-                          <div className="bg-[#0A1D11] p-10 rounded-[3rem] text-white space-y-8 shadow-2xl relative overflow-hidden group">
-                             <div className="absolute top-0 right-0 w-64 h-64 bg-lime-400/10 blur-[100px] -mr-32 -mt-32"></div>
-                             <div className="space-y-4 relative z-10">
-                                <div className="flex justify-between items-center text-white/50 text-sm font-bold uppercase tracking-widest">
-                                   <span>Subtotal</span>
-                                   <span>₦{(checkoutProduct.price * orderQty).toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-white/50 text-sm font-bold uppercase tracking-widest">
-                                   <span>Processing Fee (0.5%)</span>
-                                   <span>₦{(checkoutProduct.price * orderQty * 0.005).toLocaleString()}</span>
-                                </div>
-                                <div className="h-px bg-white/10 my-6"></div>
-                                <div className="flex justify-between items-end">
-                                   <div className="space-y-1">
-                                      <span className="text-xs font-black text-lime-400 uppercase tracking-widest">Total Payable Sum</span>
-                                      <p className="text-4xl font-black">₦{(checkoutProduct.price * orderQty * 1.005).toLocaleString()}</p>
-                                   </div>
-                                   <div className="text-right">
-                                      <div className="flex items-center gap-1.5 justify-end text-green-400 text-[10px] font-black uppercase tracking-widest">
-                                         <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div> Secure Node
-                                      </div>
-                                   </div>
-                                </div>
-                             </div>
-                             <button onClick={handleCreateOrder} disabled={isOrdering} className="w-full py-6 bg-lime-400 text-[#0A1D11] rounded-[2rem] font-black text-lg flex items-center justify-center gap-4 hover:bg-lime-300 active:scale-95 transition-all relative z-10 shadow-2xl shadow-lime-400/20 group">
-                                {isOrdering ? <Loader2 className="animate-spin" /> : <><CreditCard className="w-6 h-6" /> Complete Purchase</>}
-                             </button>
-                             <p className="text-center text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] relative z-10">AgriLink Encrypted Transaction</p>
-                          </div>
-                          <div className="flex items-center justify-center gap-8 text-neutral-300">
-                             <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4" /><span className="text-[10px] font-bold uppercase tracking-widest">SSL Secured</span></div>
-                             <div className="flex items-center gap-2"><CreditCard className="w-4 h-4" /><span className="text-[10px] font-bold uppercase tracking-widest">Multiple Gateways</span></div>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'My Orders' && (
-            <div className="bg-white rounded-[3rem] border border-neutral-100 overflow-hidden shadow-sm animate-in fade-in duration-500">
-               <div className="p-10 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/30">
-                 <h3 className="text-2xl font-black">Order Fulfillment</h3>
-                 <button onClick={fetchProfileAndData} className="p-3 bg-white rounded-2xl border border-neutral-100 hover:bg-neutral-50 transition-colors shadow-sm">
-                   <RefreshCw className="w-5 h-5 text-neutral-300" />
-                 </button>
-               </div>
-               <div className="overflow-x-auto">
-                 <table className="w-full text-left">
-                    <thead className="bg-neutral-50/50 text-[10px] font-black text-neutral-400 uppercase tracking-widest">
-                       <tr>
-                         <th className="px-10 py-5">Inventory Item</th>
-                         <th className="px-10 py-5">Order Quantity</th>
-                         <th className="px-10 py-5">Total Value</th>
-                         <th className="px-10 py-5">Trade Date</th>
-                         <th className="px-10 py-5">Platform Status</th>
-                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-50">
-                       {orders.map(o => (
-                         <tr key={o.id} className="hover:bg-neutral-50/50 transition-colors cursor-pointer group">
-                           <td className="px-10 py-8">
-                             <div className="flex items-center gap-4">
-                               <div className="w-10 h-10 bg-lime-100 rounded-xl flex items-center justify-center text-lime-700 font-black text-xs">{o.product_name.charAt(0)}</div>
-                               <p className="font-black text-sm">{o.product_name}</p>
-                             </div>
-                           </td>
-                           <td className="px-10 py-8 text-sm font-bold text-neutral-500">{o.quantity.toLocaleString()} {o.unit}</td>
-                           <td className="px-10 py-8 font-black text-[#0A1D11]">₦{o.total_price.toLocaleString()}</td>
-                           <td className="px-10 py-8 text-[10px] text-neutral-400 font-black uppercase">{new Date(o.created_at).toLocaleDateString()}</td>
-                           <td className="px-10 py-8">
-                             <span className={`px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${o.status === 'Pending' ? 'bg-orange-100 text-orange-600 border border-orange-200' : 'bg-green-100 text-green-600 border border-green-200'}`}>{o.status}</span>
-                           </td>
-                         </tr>
-                       ))}
-                       {orders.length === 0 && (
-                         <tr>
-                            <td colSpan={5} className="p-32 text-center text-neutral-400">
-                               <Box className="w-16 h-16 mx-auto mb-6 opacity-10" />
-                               <p className="font-black uppercase tracking-[0.2em] text-[10px]">No historical orders matched</p>
-                            </td>
-                         </tr>
-                       )}
-                    </tbody>
-                 </table>
-               </div>
             </div>
           )}
         </div>
