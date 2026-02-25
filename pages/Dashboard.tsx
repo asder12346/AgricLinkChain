@@ -35,7 +35,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
     farm_size: '',
     farm_location: '',
     crops_farming: '',
-    crops_planting: ''
+    crops_planting: '',
+    business_registration_number: ''
   });
 
   useEffect(() => {
@@ -54,7 +55,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
           farm_size: prof.farm_size || '',
           farm_location: prof.farm_location || '',
           crops_farming: prof.crops_farming || '',
-          crops_planting: prof.crops_planting || ''
+          crops_planting: prof.crops_planting || '',
+          business_registration_number: prof.business_registration_number || ''
         });
       }
 
@@ -73,11 +75,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
         }
       } else if (userRole === 'Buyer') {
         const { data: marketplace } = await supabase.from('listings').select(`*, profiles:farmer_id (full_name, location)` );
-        const defaultMarket = [
-          { id: 'm1', name: 'Premium Cocoa Beans', price: 5200, unit: 'kg', stock: 5000, category: 'Grains', image_url: 'https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&q=80&w=600', profiles: { full_name: 'Ondo Cocoa Estate', location: 'Ondo State' } },
-          { id: 'm2', name: 'Bulk White Maize', price: 38000, unit: 'ton', stock: 15, category: 'Grains', image_url: 'https://images.unsplash.com/photo-1551739440-5dd934d3a94a?auto=format&fit=crop&q=80&w=600', profiles: { full_name: 'Zaria Harvesters', location: 'Kaduna State' } },
-        ];
-        setMarketProducts(marketplace && marketplace.length > 0 ? marketplace : defaultMarket);
+        setMarketProducts(marketplace || []);
         const { data: myOrders } = await supabase.from('orders').select('*').eq('buyer_id', user.id).order('created_at', { ascending: false });
         if (myOrders) setOrders(myOrders);
       }
@@ -100,6 +98,34 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
       alert(err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error('You must select an image to upload.');
+      }
+
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        const { error: updateError } = await supabase.from('profiles').update({ avatar_url: base64String }).eq('id', user.id);
+        
+        if (updateError) {
+          alert(updateError.message);
+        } else {
+          alert('Profile picture updated successfully!');
+          fetchProfileAndData();
+        }
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error: any) {
+      alert(error.message);
+      setUploading(false);
     }
   };
 
@@ -388,8 +414,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                           )}
                        </div>
                        <label className="absolute -bottom-4 -right-4 p-5 bg-lime-400 text-[#0A1D11] rounded-3xl shadow-2xl hover:scale-110 cursor-pointer border-[8px] border-white transition-all">
-                          <Camera className="w-8 h-8" />
-                          <input type="file" className="hidden" accept="image/*" disabled={uploading} />
+                          {uploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Camera className="w-8 h-8" />}
+                          <input type="file" className="hidden" accept="image/*" capture="environment" disabled={uploading} onChange={handleAvatarUpload} />
                        </label>
                     </div>
 
@@ -417,7 +443,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                           <div className="w-10 h-10 rounded-2xl bg-lime-100 flex items-center justify-center"><Info className="w-5 h-5" /></div>
                           <h4 className="text-sm font-black uppercase tracking-[0.2em]">Basic Node Data</h4>
                        </div>
-                       <div className="space-y-6">
+                        <div className="space-y-6">
                           <div className="space-y-2">
                              <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Legal Entity Full Name</label>
                              <input type="text" value={editProfile.full_name} onChange={(e) => setEditProfile({...editProfile, full_name: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 rounded-[1.75rem] px-8 py-5 text-sm font-bold outline-none focus:ring-4 ring-lime-400/10 focus:bg-white transition-all" />
@@ -425,6 +451,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                           <div className="space-y-2">
                              <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">General Operations Hub</label>
                              <input type="text" value={editProfile.location} onChange={(e) => setEditProfile({...editProfile, location: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 rounded-[1.75rem] px-8 py-5 text-sm font-bold outline-none focus:ring-4 ring-lime-400/10 focus:bg-white transition-all" />
+                          </div>
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Business Registration Number</label>
+                             <input type="text" value={editProfile.business_registration_number} onChange={(e) => setEditProfile({...editProfile, business_registration_number: e.target.value})} placeholder="e.g. RC-123456" className="w-full bg-neutral-50 border border-neutral-100 rounded-[1.75rem] px-8 py-5 text-sm font-bold outline-none focus:ring-4 ring-lime-400/10 focus:bg-white transition-all" />
                           </div>
                        </div>
                     </div>
