@@ -204,8 +204,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
                   </div>
                   <button onClick={() => setActiveTab('Products')} className="mt-8 bg-lime-400 text-[#0A1D11] py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-lime-300 transition-all">Audit Products</button>
                 </div>
-              </div >
-            </div >
+              </div>
+            </div>
           )}
 
           {activeTab === 'Users' && (
@@ -296,7 +296,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
                       </div>
                     </div>
                   </div>
-                )}
+                ))}
               </div>
             </div>
           )}

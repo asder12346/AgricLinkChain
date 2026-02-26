@@ -14,15 +14,6 @@ import Footer from './components/Footer';
 import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
-<<<<<<< HEAD
-import { supabase } from './lib/supabase';
-
-const App: React.FC = () => {
-  const [view, setView] = useState<'landing' | 'auth' | 'dashboard' | 'admin-dashboard'>('landing');
-  const [authRole, setAuthRole] = useState<string>('Farmer');
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-=======
 import AdminLogin from './pages/AdminLogin';
 import { supabase } from './lib/supabase';
 
@@ -32,16 +23,11 @@ const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAdminAuth, setIsAdminAuth] = useState(localStorage.getItem('agri_admin_auth') === 'true');
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
+
 
   useEffect(() => {
     // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
-<<<<<<< HEAD
-      if (session?.user) {
-        setUser(session.user);
-        if (window.location.pathname === '/admin-dashboard') {
-=======
       const path = window.location.pathname;
 
       if (path === '/admin') {
@@ -49,7 +35,7 @@ const App: React.FC = () => {
       } else if (session?.user) {
         setUser(session.user);
         if (path === '/admin-dashboard') {
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
+
           setView('admin-dashboard');
         } else {
           setView('dashboard');
@@ -59,12 +45,6 @@ const App: React.FC = () => {
     });
 
     // Global auth listener
-<<<<<<< HEAD
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        if (window.location.pathname === '/admin-dashboard') {
-=======
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const path = window.location.pathname;
       if (path === '/admin') return;
@@ -80,7 +60,7 @@ const App: React.FC = () => {
           .single();
 
         if (profile?.user_type === 'Admin') {
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
+
           setView('admin-dashboard');
         } else {
           setView('dashboard');
@@ -97,13 +77,6 @@ const App: React.FC = () => {
   // Effect to prevent logged-in users from seeing the landing page
   useEffect(() => {
     if (!loading && user && view === 'landing') {
-<<<<<<< HEAD
-      if (window.location.pathname === '/admin-dashboard') {
-        setView('admin-dashboard');
-      } else {
-        setView('dashboard');
-      }
-=======
       const checkRole = async () => {
         const { data: profile } = await supabase
           .from('profiles')
@@ -118,7 +91,7 @@ const App: React.FC = () => {
         }
       };
       checkRole();
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
+
     }
   }, [user, view, loading]);
 
@@ -132,11 +105,9 @@ const App: React.FC = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-<<<<<<< HEAD
-=======
     localStorage.removeItem('agri_admin_auth');
     setIsAdminAuth(false);
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
+
     // Auth listener handles view reset to 'landing'
   };
 
@@ -149,9 +120,6 @@ const App: React.FC = () => {
     return <AuthPage onBack={() => setView('landing')} initialType={authRole} />;
   }
 
-<<<<<<< HEAD
-  if (view === 'admin-dashboard') {
-=======
   if (view === 'admin-login') {
     return (
       <AdminLogin
@@ -169,16 +137,13 @@ const App: React.FC = () => {
       setView('admin-login');
       return null;
     }
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
+
     return <AdminDashboard onSignOut={handleSignOut} />;
   }
 
   if (view === 'dashboard' && user) {
-<<<<<<< HEAD
-    return <Dashboard user={user} onSignOut={handleSignOut} onGoHome={() => {}} />;
-=======
     return <Dashboard user={user} onSignOut={handleSignOut} onGoHome={() => { }} />;
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
+
   }
 
   return (
@@ -188,15 +153,10 @@ const App: React.FC = () => {
         <section id="hero">
           <Hero onStart={() => handleJoin('Farmer')} />
         </section>
-<<<<<<< HEAD
-        
-        <LogoCloud />
-        
-=======
 
         <LogoCloud />
 
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
+
         <section id="solutions" className="py-20 md:py-32">
           <Features />
         </section>

@@ -45,28 +45,17 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
     <nav className={`fixed w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#0A1D11]/90 backdrop-blur-xl py-4 border-b border-white/5 shadow-2xl' : 'bg-transparent py-7'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
-<<<<<<< HEAD
-          <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
-            <div className="bg-lime-400 p-2 rounded-xl shadow-lg shadow-lime-400/20 group-hover:rotate-6 transition-transform">
-              <Leaf className="w-6 h-6 text-[#0A1D11]" />
-=======
           <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div className="bg-lime-400 p-1.5 rounded-xl shadow-lg shadow-lime-400/20 group-hover:rotate-6 transition-transform overflow-hidden">
               <img src="/logo.png" className="w-8 h-8 object-contain" alt="Logo" />
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
             </div>
             <span className="text-xl font-extrabold tracking-tight text-white">AgricLinkChain</span>
           </div>
 
           <div className="hidden md:flex items-center space-x-10">
             {navLinks.map((link) => (
-<<<<<<< HEAD
-              <button 
-                key={link.name} 
-=======
               <button
                 key={link.name}
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
                 onClick={() => scrollToSection(link.href)}
                 className="text-xs font-black uppercase tracking-widest text-white/60 hover:text-lime-400 transition-all"
               >
@@ -78,22 +67,14 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
           <div className="hidden md:flex items-center gap-6">
             {user ? (
               <div className="flex items-center gap-5">
-<<<<<<< HEAD
-                <button 
-=======
                 <button
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
                   onClick={onGoDashboard}
                   className="flex items-center gap-2.5 bg-lime-400/10 text-lime-400 border border-lime-400/20 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-lime-400 hover:text-[#0A1D11] transition-all shadow-xl"
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   Dashboard
                 </button>
-<<<<<<< HEAD
-                <button 
-=======
                 <button
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
                   onClick={handleLogout}
                   className="bg-white/5 hover:bg-red-500/10 text-white/40 hover:text-red-400 p-3 rounded-2xl transition-all border border-white/10"
                 >
@@ -101,11 +82,7 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
                 </button>
               </div>
             ) : (
-<<<<<<< HEAD
-              <button 
-=======
               <button
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
                 onClick={onJoin}
                 className="bg-lime-400 text-[#0A1D11] px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-lime-300 transition-all transform hover:scale-105 active:scale-95 shadow-2xl shadow-lime-400/20"
               >
@@ -136,21 +113,13 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
           <div className="h-px bg-white/5 my-8"></div>
           {user ? (
             <div className="space-y-4">
-<<<<<<< HEAD
-              <button 
-=======
               <button
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
                 onClick={() => { setIsOpen(false); onGoDashboard(); }}
                 className="w-full bg-lime-400 text-[#0A1D11] py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3"
               >
                 <LayoutDashboard className="w-5 h-5" /> Go to Dashboard
               </button>
-<<<<<<< HEAD
-              <button 
-=======
               <button
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
                 onClick={handleLogout}
                 className="w-full bg-white/5 text-white/40 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 border border-white/10"
               >
@@ -158,11 +127,7 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
               </button>
             </div>
           ) : (
-<<<<<<< HEAD
-            <button 
-=======
             <button
->>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
               onClick={() => { setIsOpen(false); onJoin(); }}
               className="w-full bg-lime-400 text-[#0A1D11] py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-lime-400/20"
             >
@@ -171,7 +136,7 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
           )}
         </div>
       </div>
-    </nav>
+    </nav >
   );
 };
 
