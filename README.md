@@ -19,3 +19,4 @@ View your app in AI Studio: https://ai.studio/apps/80508657-a09f-4780-8deb-f8338
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+# AgricLinkChain
