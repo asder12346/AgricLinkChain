@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
               <div className="bg-lime-400 p-1.5 rounded-lg">
                 <Leaf className="w-6 h-6 text-[#0A1D11]" />
               </div>
-              <span className="text-2xl font-extrabold tracking-tight">AgriLinkChain</span>
+              <span className="text-2xl font-extrabold tracking-tight">AgricLinkChain</span>
             </div>
             <p className="text-white/40 leading-relaxed max-w-xs">
               The world’s most trusted digital marketplace for local and industrial agriculture.
@@ -60,7 +60,7 @@ const Footer: React.FC = () => {
 
         <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-white/30 text-sm">
-            © 2026 AgriLinkChain. All rights reserved.
+            © 2026 AgricLinkChain. All rights reserved.
           </div>
           <div className="flex gap-8 text-sm text-white/30">
             <a href="#" className="hover:text-white transition-colors">Privacy</a>

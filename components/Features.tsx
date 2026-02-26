@@ -26,7 +26,7 @@ const Features: React.FC = () => {
       <div className="grid lg:grid-cols-2 gap-20 items-center">
         <div className="space-y-8">
           <div className="space-y-4">
-            <h4 className="text-lime-400 font-bold uppercase tracking-widest text-sm">Why AgriLinkChain?</h4>
+            <h4 className="text-lime-400 font-bold uppercase tracking-widest text-sm">Why AgricLinkChain?</h4>
             <h2 className="text-4xl md:text-5xl font-extrabold leading-tight">
               Smart Farming in use, <br />
               <span className="text-white/60">Better Results</span>

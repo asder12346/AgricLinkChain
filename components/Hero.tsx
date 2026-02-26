@@ -33,7 +33,7 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
             </h1>
             
             <p className="text-xl text-white/70 max-w-lg leading-relaxed mx-auto lg:mx-0">
-              AgriLinkChain connects farmers directly to global buyers using advanced technology to ensure fair pricing, transparency, and sustainable growth.
+              AgricLinkChain connects farmers directly to global buyers using advanced technology to ensure fair pricing, transparency, and sustainable growth.
             </p>
 
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">

@@ -24,7 +24,7 @@ const Mission: React.FC<MissionProps> = ({ onJoin }) => {
               <span className="text-white/60">Global Agriculture</span>
             </h2>
             <p className="text-xl text-white/50 leading-relaxed max-w-xl">
-              At AgriLinkChain, we believe that technology can solve the most pressing challenges in the agricultural supply chain. By removing middlemen and providing direct market access, we ensure that farmers receive fair value for their hard work while providing buyers with guaranteed quality and transparency.
+              At AgricLinkChain, we believe that technology can solve the most pressing challenges in the agricultural supply chain. By removing middlemen and providing direct market access, we ensure that farmers receive fair value for their hard work while providing buyers with guaranteed quality and transparency.
             </p>
           </div>
 

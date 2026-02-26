@@ -12,6 +12,72 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onInitiateOrder }) => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
 
+<<<<<<< HEAD
+=======
+  const defaultProducts = [
+    {
+      id: 'd1',
+      name: 'Bulk Export Grade Cocoa Beans',
+      category: 'Grains',
+      price: 5200,
+      unit: 'kg',
+      stock: 5000,
+      image_url: 'https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&q=80&w=800',
+      profiles: { full_name: 'Ondo Cocoa Cooperative', location: 'Ondo, Nigeria' }
+    },
+    {
+      id: 'd2',
+      name: 'Organic Sweet Potatoes (Premium)',
+      category: 'Tubers',
+      price: 12000,
+      unit: 'bag',
+      stock: 200,
+      image_url: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80&w=800',
+      profiles: { full_name: 'Benue Highland Farms', location: 'Benue, Nigeria' }
+    },
+    {
+      id: 'd3',
+      name: 'Yellow Hybrid Maize (Seedlings)',
+      category: 'Grains',
+      price: 45000,
+      unit: 'ton',
+      stock: 45,
+      image_url: 'https://images.unsplash.com/photo-1551739440-5dd934d3a94a?auto=format&fit=crop&q=80&w=800',
+      profiles: { full_name: 'Northern Ag-Glow', location: 'Kaduna, Nigeria' }
+    },
+    {
+      id: 'd4',
+      name: 'Fresh Scotch Bonnet Peppers',
+      category: 'Vegetables',
+      price: 2500,
+      unit: 'basket',
+      stock: 120,
+      image_url: 'https://images.unsplash.com/photo-1589927986089-35812388d1f4?auto=format&fit=crop&q=80&w=800',
+      profiles: { full_name: 'Kano Spice Gardens', location: 'Kano, Nigeria' }
+    },
+    {
+      id: 'd5',
+      name: 'Large White Yams (New Season)',
+      category: 'Tubers',
+      price: 1500,
+      unit: 'tuber',
+      stock: 1000,
+      image_url: 'https://images.unsplash.com/photo-1600100397608-f010e423b971?auto=format&fit=crop&q=80&w=800',
+      profiles: { full_name: 'Abakaliki Root Hub', location: 'Ebonyi, Nigeria' }
+    },
+    {
+      id: 'd6',
+      name: 'Premium Parboiled Rice',
+      category: 'Grains',
+      price: 78000,
+      unit: '50kg bag',
+      stock: 300,
+      image_url: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=800',
+      profiles: { full_name: 'Lafia Rice Mills', location: 'Nasarawa, Nigeria' }
+    }
+  ];
+
+>>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
   useEffect(() => {
     fetchProducts();
     
@@ -35,10 +101,17 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onInitiateOrder }) => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
+<<<<<<< HEAD
       setProducts(data || []);
     } catch (err) {
       console.error('Error fetching marketplace:', err);
       setProducts([]);
+=======
+      setProducts(data && data.length > 0 ? [...data, ...defaultProducts] : defaultProducts);
+    } catch (err) {
+      console.error('Error fetching marketplace:', err);
+      setProducts(defaultProducts);
+>>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
     } finally {
       setLoading(false);
     }
@@ -88,12 +161,16 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onInitiateOrder }) => {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-32 gap-6 bg-neutral-50 rounded-[3rem] border border-neutral-100">
           <Loader2 className="w-12 h-12 text-lime-500 animate-spin" />
+<<<<<<< HEAD
           <p className="font-bold text-neutral-400 uppercase tracking-widest text-xs text-center">Loading products...</p>
         </div>
       ) : products.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 gap-6 bg-neutral-50 rounded-[3rem] border border-neutral-100">
           <Box className="w-12 h-12 text-neutral-300" />
           <p className="font-bold text-neutral-400 uppercase tracking-widest text-xs text-center">No products found in the database.</p>
+=======
+          <p className="font-bold text-neutral-400 uppercase tracking-widest text-xs text-center">Syncing with Global Trade Records...</p>
+>>>>>>> 7d948a1 (Initial commit with Farmer Dashboard, Marketplace, and Admin Portal enhancements)
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">

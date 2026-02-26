@@ -6,7 +6,7 @@ const stories = [
   {
     name: 'Ibrahim Musa',
     location: 'Rice Farmer, Jigawa',
-    quote: "AgriLinkChain changed my life. I used to sell to middlemen who took 40% of my profit. Now I sell directly and earn almost double.",
+    quote: "AgricLinkChain changed my life. I used to sell to middlemen who took 40% of my profit. Now I sell directly and earn almost double.",
     img: 'https://picsum.photos/seed/ib-musa/100/100'
   },
   {

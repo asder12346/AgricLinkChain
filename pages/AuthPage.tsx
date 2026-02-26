@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Leaf, ArrowLeft, Loader2, AlertCircle, Hash, CheckCircle2, Ruler, MapPin, Sprout } from 'lucide-react';
+import { Leaf, ArrowLeft, Loader2, AlertCircle, Hash, CheckCircle2, Ruler, MapPin, Sprout, ShieldCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface AuthPageProps {
@@ -20,7 +20,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
   const [fullName, setFullName] = useState('');
   const [userType, setUserType] = useState(initialType);
   const [agentReferralCode, setAgentReferralCode] = useState('');
-  
+
   // Agricultural Data States
   const [farmSize, setFarmSize] = useState('');
   const [farmLocation, setFarmLocation] = useState('');
@@ -40,7 +40,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
     try {
       if (activeTab === 'signup') {
         const referralCode = userType === 'Agent' ? generateReferralCode(fullName) : null;
-        
+
         const { data, error: authError } = await supabase.auth.signUp({
           email,
           password,
@@ -59,7 +59,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
         });
 
         if (authError) throw authError;
-        
+
         setSuccess(true);
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
@@ -75,14 +75,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
     return (
       <div className="min-h-screen bg-[#0A1D11] flex flex-col items-center justify-center p-4">
         <div className="text-center space-y-6 animate-in zoom-in duration-500">
-           <div className="w-20 h-20 bg-lime-400 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-lime-400/20">
-              <CheckCircle2 className="w-10 h-10 text-[#0A1D11]" />
-           </div>
-           <div className="space-y-2">
-             <h2 className="text-3xl font-bold text-white">Welcome Aboard!</h2>
-             <p className="text-white/60">Your agricultural profile is ready. Redirecting...</p>
-           </div>
-           <Loader2 className="w-6 h-6 text-lime-400 animate-spin mx-auto" />
+          <div className="w-20 h-20 bg-lime-400 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-lime-400/20">
+            <CheckCircle2 className="w-10 h-10 text-[#0A1D11]" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold text-white">Welcome Aboard!</h2>
+            <p className="text-white/60">Your agricultural profile is ready. Redirecting...</p>
+          </div>
+          <Loader2 className="w-6 h-6 text-lime-400 animate-spin mx-auto" />
         </div>
       </div>
     );
@@ -96,11 +96,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
 
       <div className={`w-full ${activeTab === 'signup' && (userType === 'Farmer' || userType === 'Buyer') ? 'max-w-4xl' : 'max-w-md'} space-y-8 bg-[#0D2517] p-8 md:p-12 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden transition-all duration-500`}>
         <div className="absolute -top-12 -right-12 w-32 h-32 bg-lime-400/10 blur-[60px] rounded-full"></div>
-        
+
         <div className="text-center space-y-4 relative">
           <div className="inline-flex items-center gap-2 mb-4">
-            <div className="bg-lime-400 p-1.5 rounded-lg"><Leaf className="w-6 h-6 text-[#0A1D11]" /></div>
-            <span className="text-2xl font-extrabold text-white">AgriLink</span>
+            <div className="bg-lime-400 p-1 rounded-lg overflow-hidden">
+              <img src="/logo.png" className="w-8 h-8 object-contain" alt="Logo" />
+            </div>
+            <span className="text-2xl font-extrabold text-white">AgricLinkChain</span>
           </div>
           <h2 className="text-3xl font-bold text-white tracking-tight">
             {activeTab === 'signup' ? 'Join the Future' : 'Welcome back'}
@@ -116,7 +118,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
             <div className="space-y-3">
               <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Register As</label>
               <div className="grid grid-cols-3 gap-2">
-                {['Farmer', 'Buyer', 'Agent'].map((type) => (
+                {['Farmer', 'Buyer', 'Agent', 'Admin'].map((type) => (
                   <button
                     key={type}
                     type="button"
@@ -149,21 +151,20 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
                 <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400 transition-colors" />
               </div>
             </div>
-
             {activeTab === 'signup' && (userType === 'Farmer' || userType === 'Buyer') && (
               <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-2"><Ruler className="w-3 h-3" /> Operation Size ({userType === 'Farmer' ? 'Hectares' : 'Sqm'})</label>
-                    <input required type="number" value={farmSize} onChange={(e) => setFarmSize(e.target.value)} placeholder="e.g. 100" className="w-full bg-white/5 border border-lime-400/20 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400" />
-                 </div>
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-2"><MapPin className="w-3 h-3" /> Specific {userType === 'Farmer' ? 'Farm' : 'Warehouse'} Location</label>
-                    <input required type="text" value={farmLocation} onChange={(e) => setFarmLocation(e.target.value)} placeholder="State, Region" className="w-full bg-white/5 border border-lime-400/20 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400" />
-                 </div>
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-2"><Sprout className="w-3 h-3" /> Primary Crops (Current)</label>
-                    <input required type="text" value={cropsFarming} onChange={(e) => setCropsFarming(e.target.value)} placeholder="e.g. Cocoa, Cassava" className="w-full bg-white/5 border border-lime-400/20 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400" />
-                 </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-2"><Ruler className="w-3 h-3" /> Operation Size ({userType === 'Farmer' ? 'Hectares' : 'Sqm'})</label>
+                  <input required type="number" value={farmSize} onChange={(e) => setFarmSize(e.target.value)} placeholder="e.g. 100" className="w-full bg-white/5 border border-lime-400/20 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-2"><MapPin className="w-3 h-3" /> Specific {userType === 'Farmer' ? 'Farm' : 'Warehouse'} Location</label>
+                  <input required type="text" value={farmLocation} onChange={(e) => setFarmLocation(e.target.value)} placeholder="State, Region" className="w-full bg-white/5 border border-lime-400/20 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-2"><Sprout className="w-3 h-3" /> Primary Crops (Current)</label>
+                  <input required type="text" value={cropsFarming} onChange={(e) => setCropsFarming(e.target.value)} placeholder="e.g. Cocoa, Cassava" className="w-full bg-white/5 border border-lime-400/20 rounded-2xl px-6 py-4 text-white outline-none focus:border-lime-400" />
+                </div>
               </div>
             )}
           </div>
@@ -184,9 +185,19 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
           </div>
         </form>
 
-        <div className="flex justify-center pt-4">
+        <div className="flex flex-col items-center gap-4 pt-4">
           <button onClick={() => setActiveTab(activeTab === 'signup' ? 'signin' : 'signup')} className="text-sm font-bold text-white/40 hover:text-lime-400 transition-colors">
             {activeTab === 'signup' ? 'Already registered? Sign In' : "New here? Create an account"}
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('signin');
+              setUserType('Admin');
+            }}
+            className="text-[10px] font-black uppercase tracking-widest text-white/10 hover:text-lime-400/40 transition-colors flex items-center gap-2"
+          >
+            <ShieldCheck className="w-3 h-3" /> Master Control Access
           </button>
         </div>
       </div>
