@@ -60,7 +60,6 @@ const App: React.FC = () => {
           .single();
 
         if (profile?.user_type === 'Admin') {
-
           setView('admin-dashboard');
         } else {
           setView('dashboard');
@@ -143,7 +142,6 @@ const App: React.FC = () => {
 
   if (view === 'dashboard' && user) {
     return <Dashboard user={user} onSignOut={handleSignOut} onGoHome={() => { }} />;
-
   }
 
   return (

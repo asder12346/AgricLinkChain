@@ -3,7 +3,7 @@ create table public.profiles (
   id uuid references auth.users on delete cascade primary key,
   full_name text,
   email text,
-  user_type text check (user_type in ('Farmer', 'Buyer', 'Agent', 'Admin')),
+  user_type text check (user_type in ('Farmer', 'Buyer', 'Agent', 'Admin', 'Financier')),
   location text,
   farm_size text,
   farm_location text,
@@ -53,11 +53,50 @@ create table public.commissions (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- Loan Requests Table (farmer side)
+create table public.loan_requests (
+  id uuid default gen_random_uuid() primary key,
+  farmer_id uuid references public.profiles(id) on delete cascade not null,
+  amount numeric not null,
+  purpose text not null,
+  crop_type text,
+  farm_size text,
+  status text check (status in ('pending', 'approved', 'rejected', 'more_info')) default 'pending',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Loans Table (financier-issued loans)
+create table public.loans (
+  id uuid default gen_random_uuid() primary key,
+  farmer_id uuid references public.profiles(id) on delete cascade not null,
+  financier_id uuid references public.profiles(id) on delete cascade not null,
+  loan_request_id uuid references public.loan_requests(id) on delete set null,
+  amount numeric not null,
+  interest_rate numeric default 0,
+  repayment_period integer, -- months
+  due_date date,
+  status text check (status in ('active', 'completed', 'defaulted')) default 'active',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Loan Repayments Table
+create table public.loan_repayments (
+  id uuid default gen_random_uuid() primary key,
+  loan_id uuid references public.loans(id) on delete cascade not null,
+  amount_paid numeric not null,
+  payment_date date default current_date,
+  status text check (status in ('confirmed', 'pending')) default 'pending',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- Row Level Security (RLS)
 alter table public.profiles enable row level security;
 alter table public.listings enable row level security;
 alter table public.orders enable row level security;
 alter table public.commissions enable row level security;
+alter table public.loan_requests enable row level security;
+alter table public.loans enable row level security;
+alter table public.loan_repayments enable row level security;
 
 -- Profiles Policies
 create policy "Public profiles are viewable by everyone" on profiles for select using (true);
@@ -74,6 +113,27 @@ create policy "Farmers can update their orders status" on orders for update usin
 
 -- Commissions Policies
 create policy "Agents can see their own commissions" on commissions for select using (auth.uid() = agent_id);
+
+-- Loan Requests Policies
+create policy "Farmers can manage own loan requests" on loan_requests for all using (auth.uid() = farmer_id);
+create policy "Financiers can view all loan requests" on loan_requests for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and user_type = 'Financier')
+);
+create policy "Financiers can update loan request status" on loan_requests for update using (
+  exists (select 1 from public.profiles where id = auth.uid() and user_type = 'Financier')
+);
+
+-- Loans Policies
+create policy "Farmers can see their own loans" on loans for select using (auth.uid() = farmer_id);
+create policy "Financiers can manage their own issued loans" on loans for all using (auth.uid() = financier_id);
+
+-- Loan Repayments Policies
+create policy "Farmers can see repayments for their loans" on loan_repayments for select using (
+  exists (select 1 from public.loans where id = loan_id and farmer_id = auth.uid())
+);
+create policy "Financiers can manage repayments for their loans" on loan_repayments for all using (
+  exists (select 1 from public.loans where id = loan_id and financier_id = auth.uid())
+);
 
 -- Profile Trigger (Automatically create profile on signup)
 create or replace function public.handle_new_user()

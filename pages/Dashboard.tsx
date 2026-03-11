@@ -336,8 +336,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
         <div className="h-full flex flex-col p-8">
           <div className="flex items-center justify-between mb-12">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('Overview')}>
-              <div className="bg-lime-400 p-1 rounded-xl shadow-lg shadow-lime-400/20 overflow-hidden">
-                <img src="/logo.png" className="w-8 h-8 object-contain" alt="Logo" />
+              <div className="rounded-full shadow-lg shadow-lime-400/20 overflow-hidden w-10 h-10 flex items-center justify-center">
+                <img src="/logo.png" className="w-full h-full object-cover rounded-full" alt="Logo" />
               </div>
               <span className="text-xl font-extrabold text-white tracking-tight">AgricLinkChain</span>
             </div>

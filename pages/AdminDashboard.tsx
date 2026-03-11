@@ -115,8 +115,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0A1D11] transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-full flex flex-col p-6">
           <div className="flex items-center gap-3 mb-10">
-            <div className="bg-lime-400 p-1.5 rounded-lg shadow-lg shadow-lime-400/20 overflow-hidden">
-              <img src="/logo.png" className="w-8 h-8 object-contain" alt="Logo" />
+            <div className="rounded-full shadow-lg shadow-lime-400/20 overflow-hidden w-10 h-10 flex items-center justify-center">
+              <img src="/logo.png" className="w-full h-full object-cover rounded-full" alt="Logo" />
             </div>
             <span className="text-xl font-extrabold text-white">Staff Admin</span>
           </div>

@@ -49,7 +49,7 @@ const Marketplace: React.FC<MarketplaceProps> = ({
       price: 45000,
       unit: 'ton',
       stock: 45,
-      image_url: 'https://images.unsplash.com/photo-1551739440-5dd934d3a94a?auto=format&fit=crop&q=80&w=800',
+      image_url: 'https://images.unsplash.com/photo-1536679545597-c2bb571f3299?auto=format&fit=crop&q=80&w=800',
       profiles: { full_name: 'Northern Ag-Glow', location: 'Kaduna, Nigeria' }
     },
     {
@@ -69,7 +69,7 @@ const Marketplace: React.FC<MarketplaceProps> = ({
       price: 1500,
       unit: 'tuber',
       stock: 1000,
-      image_url: 'https://images.unsplash.com/photo-1600100397608-f010e423b971?auto=format&fit=crop&q=80&w=800',
+      image_url: 'https://images.unsplash.com/photo-1628103130539-800e47069695?auto=format&fit=crop&q=80&w=800',
       profiles: { full_name: 'Abakaliki Root Hub', location: 'Ebonyi, Nigeria' }
     },
     {
