@@ -5,7 +5,7 @@ import {
   Trash2, RefreshCw, Users, Loader2, Save, ShoppingBag, Box, Image as ImageIcon,
   PlusCircle, CheckCircle2, Edit2, Calendar, MapPin, ExternalLink, Wallet, CreditCard,
   ChevronRight, ArrowLeft, Truck, Star, ShieldCheck, UserPlus, Share2, Copy, Camera, Upload,
-  Sprout, Ruler, Info, Search, MoreVertical, Landmark
+  Sprout, Ruler, Info, Search, MoreVertical, Landmark, Banknote
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import Marketplace from '../components/Marketplace';
@@ -75,15 +75,25 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
 
       const userRole = prof?.user_type || user.user_metadata?.user_type;
 
-      if (userRole === 'Farmer') {
+      if (userRole === 'User') {
+        // Fetch listings where user is seller
         const { data: list } = await supabase.from('listings').select('*').eq('farmer_id', user.id).order('created_at', { ascending: false });
         if (list) setListings(list);
-        const { data: ords } = await supabase.from('orders').select('*').eq('farmer_id', user.id);
-        if (ords) setOrders(ords);
+        
+        // Fetch orders where user is seller or buyer
+        const { data: ordsSeller } = await supabase.from('orders').select('*').eq('farmer_id', user.id);
+        const { data: ordsBuyer } = await supabase.from('orders').select('*').eq('buyer_id', user.id);
+        const allOrds = [...(ordsSeller || []), ...(ordsBuyer || [])];
+        const uniqueOrds = Array.from(new Set(allOrds.map(a => a.id))).map(id => allOrds.find(a => a.id === id));
+        setOrders(uniqueOrds);
 
-        // Also fetch marketplace data for farmer to see their products
+        // Fetch marketplace data for user to buy
         const { data: marketplace } = await supabase.from('listings').select(`*, profiles:farmer_id (full_name, location)`);
-        if (marketplace) setMarketProducts(marketplace);
+        const defaultMarket = [
+          { id: 'm1', name: 'Premium Cocoa Beans', price: 5200, unit: 'kg', stock: 5000, category: 'Grains', image_url: 'https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&q=80&w=600', profiles: { full_name: 'Ondo Cocoa Estate', location: 'Ondo State' } },
+          { id: 'm2', name: 'Bulk White Maize', price: 38000, unit: 'ton', stock: 15, category: 'Grains', image_url: 'https://images.unsplash.com/photo-1551739440-5dd934d3a94a?auto=format&fit=crop&q=80&w=600', profiles: { full_name: 'Zaria Harvesters', location: 'Kaduna State' } },
+        ];
+        setMarketProducts(marketplace && marketplace.length > 0 ? marketplace : defaultMarket);
       } else if (userRole === 'Agent') {
         const myCode = prof?.referral_code;
         if (myCode) {
@@ -92,21 +102,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
           if (network) setOnboardedEntities(network);
 
           // Fetch volume for these members
-          const farmerIds = network?.filter(p => p.user_type === 'Farmer').map(p => p.id) || [];
+          const farmerIds = network?.filter(p => p.user_type === 'Farmer' || p.user_type === 'User').map(p => p.id) || [];
           if (farmerIds.length > 0) {
             const { data: networkOrders } = await supabase.from('orders').select('*').in('farmer_id', farmerIds);
             if (networkOrders) setOrders(networkOrders);
           }
         }
-      } else if (userRole === 'Buyer') {
-        const { data: marketplace } = await supabase.from('listings').select(`*, profiles:farmer_id (full_name, location)`);
-        const defaultMarket = [
-          { id: 'm1', name: 'Premium Cocoa Beans', price: 5200, unit: 'kg', stock: 5000, category: 'Grains', image_url: 'https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&q=80&w=600', profiles: { full_name: 'Ondo Cocoa Estate', location: 'Ondo State' } },
-          { id: 'm2', name: 'Bulk White Maize', price: 38000, unit: 'ton', stock: 15, category: 'Grains', image_url: 'https://images.unsplash.com/photo-1551739440-5dd934d3a94a?auto=format&fit=crop&q=80&w=600', profiles: { full_name: 'Zaria Harvesters', location: 'Kaduna State' } },
-        ];
-        setMarketProducts(marketplace && marketplace.length > 0 ? marketplace : defaultMarket);
-        const { data: myOrders } = await supabase.from('orders').select('*').eq('buyer_id', user.id).order('created_at', { ascending: false });
-        if (myOrders) setOrders(myOrders);
       }
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -290,7 +291,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
       }]);
       if (error) throw error;
       alert('Order initiated successfully!');
-      setActiveTab('My Orders');
+      setActiveTab('Purchase History');
       fetchProfileAndData();
     } catch (err: any) {
       alert(err.message);
@@ -303,14 +304,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
   const menuItems = [
     { name: 'Overview', icon: LayoutDashboard },
     ...(userRole === 'Agent' ? [{ name: 'My Network', icon: Users }] : []),
-    ...(userRole === 'Farmer' ? [
-      { name: 'My Listings', icon: Package },
-      { name: 'Orders', icon: ShoppingCart },
-      { name: 'Marketplace', icon: ShoppingBag }
-    ] : []),
-    ...(userRole === 'Buyer' ? [
-      { name: 'Marketplace', icon: ShoppingBag },
-      { name: 'My Orders', icon: ShoppingCart }
+    ...(userRole === 'User' ? [
+      { name: 'Farmer Dashboard', icon: Sprout },
+      { name: 'Buyer Dashboard', icon: ShoppingBag },
+      { name: 'My Farm Products', icon: Package },
+      { name: 'Purchase History', icon: Truck },
+      { name: 'Loans & Financing', icon: Banknote }
     ] : []),
     { name: 'Profile', icon: UserIcon },
   ];
@@ -484,13 +483,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                 </div>
               </div>
 
-              {userRole === 'Farmer' && listings.length > 0 && (
+              {userRole === 'User' && listings.length > 0 && (
                 <div className="space-y-8">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xl font-black flex items-center gap-3">
                       <Box className="w-6 h-6 text-lime-600" /> Your Active Inventory
                     </h3>
-                    <button onClick={() => setActiveTab('My Listings')} className="text-xs font-black uppercase tracking-widest text-lime-600 hover:text-[#0A1D11] transition-colors">
+                    <button onClick={() => setActiveTab('My Farm Products')} className="text-xs font-black uppercase tracking-widest text-lime-600 hover:text-[#0A1D11] transition-colors">
                       View All Listings
                     </button>
                   </div>
@@ -562,7 +561,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                             </div>
                           </td>
                           <td className="px-10 py-8">
-                            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${entity.user_type === 'Farmer' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-orange-50 text-orange-600 border border-orange-100'}`}>
+                            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${entity.user_type === 'User' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-orange-50 text-orange-600 border border-orange-100'}`}>
                               {entity.user_type} Node
                             </span>
                           </td>
@@ -607,12 +606,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
             </div>
           )}
 
-          {activeTab === 'My Listings' && userRole === 'Farmer' && (
+          {activeTab === 'My Farm Products' && userRole === 'User' && (
             <div className="space-y-10 animate-in fade-in duration-500">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                  <h2 className="text-3xl font-black text-[#0A1D11]">Inventory Management</h2>
-                  <p className="text-neutral-500 font-medium">Manage your active listings and stock levels.</p>
+                  <h2 className="text-3xl font-black text-[#0A1D11]">My Farm Products</h2>
+                  <p className="text-neutral-500 font-medium">Manage your active commodity listings and stock levels.</p>
                 </div>
                 <button
                   onClick={() => setShowNewListing(true)}
@@ -709,12 +708,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
             </div>
           )}
 
-          {activeTab === 'Orders' && userRole === 'Farmer' && (
+          {activeTab === 'Farmer Dashboard' && userRole === 'User' && (
             <div className="space-y-10 animate-in fade-in duration-500">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                  <h2 className="text-3xl font-black text-[#0A1D11]">Trade Requests</h2>
-                  <p className="text-neutral-500 font-medium">Manage incoming orders from verified buyers.</p>
+                  <h2 className="text-3xl font-black text-[#0A1D11]">Farmer Dashboard</h2>
+                  <p className="text-neutral-500 font-medium">Manage incoming orders connecting your farm to buyers.</p>
                 </div>
               </div>
 
@@ -731,7 +730,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
-                    {orders.map((order) => (
+                    {orders.filter(o => o.farmer_id === user.id).map((order) => (
                       <tr key={order.id} className="hover:bg-neutral-50 transition-colors">
                         <td className="px-10 py-8 font-mono text-xs text-neutral-300">#{order.id.slice(0, 8).toUpperCase()}</td>
                         <td className="px-10 py-8 font-black text-sm">{order.product_name || 'Agri Commodity'}</td>
@@ -745,7 +744,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                         </td>
                       </tr>
                     ))}
-                    {orders.length === 0 && (
+                    {orders.filter(o => o.farmer_id === user.id).length === 0 && (
                       <tr><td colSpan={6} className="px-10 py-24 text-center text-neutral-300 font-bold uppercase tracking-widest text-[10px]">No active trade requests found</td></tr>
                     )}
                   </tbody>
@@ -754,23 +753,23 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
             </div>
           )}
 
-          {activeTab === 'Marketplace' && (userRole === 'Farmer' || userRole === 'Buyer') && (
+          {activeTab === 'Buyer Dashboard' && userRole === 'User' && (
             <div className="animate-in fade-in duration-500">
               <Marketplace products={marketProducts} userRole={userRole} onOrder={handleCreateOrder} />
             </div>
           )}
 
-          {activeTab === 'My Orders' && userRole === 'Buyer' && (
+          {activeTab === 'Purchase History' && userRole === 'User' && (
             <div className="space-y-10 animate-in fade-in duration-500">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                  <h2 className="text-3xl font-black text-[#0A1D11]">Purchasing History</h2>
+                  <h2 className="text-3xl font-black text-[#0A1D11]">Purchase History</h2>
                   <p className="text-neutral-500 font-medium">Tracking your active and completed acquisitions.</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {orders.map((order) => (
+                {orders.filter(o => o.buyer_id === user.id).map((order) => (
                   <div key={order.id} className="bg-white rounded-[3rem] p-10 border border-neutral-100 shadow-sm space-y-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4">
                       <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${order.status === 'Completed' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>{order.status}</span>
@@ -793,15 +792,35 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                     </div>
                   </div>
                 ))}
-                {orders.length === 0 && (
+                {orders.filter(o => o.buyer_id === user.id).length === 0 && (
                   <div className="md:col-span-3 py-32 text-center space-y-6">
                     <div className="w-24 h-24 bg-neutral-50 rounded-full flex items-center justify-center mx-auto border-2 border-dashed border-neutral-100"><Clock className="w-10 h-10 opacity-10" /></div>
                     <div className="space-y-2">
                       <p className="text-lg font-black uppercase text-[#0A1D11]/20 tracking-widest">No Acquisitions Found</p>
-                      <button onClick={() => setActiveTab('Marketplace')} className="text-lime-600 font-bold hover:underline">Explore Marketplace</button>
+                      <button onClick={() => setActiveTab('Buyer Dashboard')} className="text-lime-600 font-bold hover:underline">Explore Marketplace</button>
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Loans & Financing' && userRole === 'User' && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                  <h2 className="text-3xl font-black text-[#0A1D11]">Loans & Financing</h2>
+                  <p className="text-neutral-500 font-medium">Apply for agricultural loans and track your financing status.</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-[3rem] p-16 border border-neutral-100 shadow-sm text-center">
+                <div className="w-24 h-24 bg-lime-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Banknote className="w-10 h-10 text-lime-600" />
+                </div>
+                <h3 className="text-2xl font-black mb-4">Financial Support Coming Soon</h3>
+                <p className="text-neutral-500 max-w-md mx-auto">
+                  We are partnering with top agricultural banks to bring you zero-collateral farming loans directly to your dashboard. Stay tuned!
+                </p>
               </div>
             </div>
           )}

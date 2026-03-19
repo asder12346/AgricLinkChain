@@ -16,7 +16,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  const [userStats, setUserStats] = useState({ farmers: 0, buyers: 0, agents: 0, total: 0 });
+  const [userStats, setUserStats] = useState({ users: 0, agents: 0, total: 0 });
   const [revenue, setRevenue] = useState(0);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -47,8 +47,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
       if (profiles) {
         setAllUsers(profiles);
         setUserStats({
-          farmers: profiles.filter(p => p.user_type === 'Farmer').length,
-          buyers: profiles.filter(p => p.user_type === 'Buyer').length,
+          users: profiles.filter(p => p.user_type === 'User').length,
           agents: profiles.filter(p => p.user_type === 'Agent').length,
           total: profiles.length
         });
@@ -151,9 +150,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
                   { label: 'Total Volume', value: `₦${revenue.toLocaleString()}`, icon: Wallet, color: 'text-green-500' },
-                  { label: 'Farmers', value: userStats.farmers, icon: Users, color: 'text-blue-500' },
-                  { label: 'Buyers', value: userStats.buyers, icon: ShoppingBag, color: 'text-orange-500' },
-                  { label: 'Agents', value: userStats.agents, icon: Building2, color: 'text-lime-500' }
+                  { label: 'Platform Users', value: userStats.users, icon: Users, color: 'text-blue-500' },
+                  { label: 'Agents', value: userStats.agents, icon: Building2, color: 'text-lime-500' },
+                  { label: 'Total Accounts', value: userStats.total, icon: Users, color: 'text-orange-500' }
                 ].map((stat) => (
                   <div key={stat.label} className="bg-white p-6 rounded-3xl border border-neutral-100 shadow-sm group hover:border-lime-400/30 transition-all">
                     <div className={`p-3 w-fit rounded-2xl bg-neutral-50 mb-4 ${stat.color}`}><stat.icon className="w-6 h-6" /></div>
@@ -244,7 +243,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
                           <p className="text-[10px] font-mono text-neutral-400">{u.id.slice(0, 13)}...</p>
                         </td>
                         <td className="px-8 py-6">
-                          <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${u.user_type === 'Farmer' ? 'bg-blue-100 text-blue-700' :
+                          <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${u.user_type === 'User' ? 'bg-blue-100 text-blue-700' :
                             u.user_type === 'Agent' ? 'bg-lime-100 text-lime-700' : 'bg-neutral-100 text-neutral-700'
                             }`}>{u.user_type}</span>
                         </td>
@@ -285,7 +284,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
                     <div className="p-6 space-y-4">
                       <div>
                         <h4 className="font-bold">{item.name}</h4>
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">Farmer: {item.profiles?.full_name || 'N/A'}</p>
+                        <p className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold">User: {item.profiles?.full_name || 'N/A'}</p>
                       </div>
                       <div className="flex items-center justify-between border-t border-neutral-50 pt-4">
                         <p className="font-black text-lg text-[#0A1D11]">₦{item.price.toLocaleString()}</p>

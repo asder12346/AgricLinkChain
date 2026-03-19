@@ -8,7 +8,7 @@ interface AuthPageProps {
   initialType?: string;
 }
 
-const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) => {
+const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'User' }) => {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signup');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -19,16 +19,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [userType, setUserType] = useState(initialType);
-  const [agentReferralCode, setAgentReferralCode] = useState('');
   const [farmSize, setFarmSize] = useState('');
   const [farmLocation, setFarmLocation] = useState('');
   const [cropsFarming, setCropsFarming] = useState('');
-
-  const generateReferralCode = (name: string) => {
-    const prefix = name.substring(0, 3).toUpperCase();
-    const random = Math.floor(1000 + Math.random() * 9000);
-    return `${prefix}-${random}`;
-  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +29,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
     setError(null);
     try {
       if (activeTab === 'signup') {
-        const referralCode = userType === 'Agent' ? generateReferralCode(fullName) : null;
         const { error: authError } = await supabase.auth.signUp({
           email,
           password,
@@ -44,8 +36,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
             data: {
               full_name: fullName,
               user_type: userType,
-              referral_code: referralCode,
-              referred_by: (userType === 'Farmer' || userType === 'Buyer') ? agentReferralCode : null,
               farm_size: farmSize,
               farm_location: farmLocation,
               crops_farming: cropsFarming,
@@ -65,11 +55,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
     }
   };
 
-  const roleInfo: Record<string, { icon: string; desc: string }> = {
-    Farmer: { icon: '🌾', desc: 'List your crops & connect with buyers worldwide' },
-    Buyer: { icon: '🛒', desc: 'Source quality agricultural produce directly' },
-    Agent: { icon: '🤝', desc: 'Recruit farmers & earn referral commissions' },
-  };
+
 
   if (success) {
     return (
@@ -88,7 +74,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
     );
   }
 
-  const isFarmerOrBuyer = activeTab === 'signup' && (userType === 'Farmer' || userType === 'Buyer');
+  const isUserSignup = activeTab === 'signup' && userType === 'User';
 
   return (
     <div className="min-h-screen bg-[#071210] flex">
@@ -156,7 +142,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
-        <div className={`w-full ${isFarmerOrBuyer ? 'max-w-3xl' : 'max-w-md'} space-y-7 transition-all duration-500`}>
+        <div className={`w-full ${isUserSignup ? 'max-w-3xl' : 'max-w-md'} space-y-7 transition-all duration-500`}>
           {/* Header */}
           <div className="text-center space-y-1">
             <h2 className="text-3xl font-black text-white">
@@ -191,34 +177,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
               </div>
             )}
 
-            {/* Role Selector */}
-            {activeTab === 'signup' && (
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Register As</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['Farmer', 'Buyer', 'Agent'].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setUserType(type)}
-                      className={`py-3 rounded-2xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5 ${
-                        userType === type
-                          ? 'bg-lime-400/10 border-lime-400/40 text-lime-400'
-                          : 'bg-white/[0.03] border-white/[0.08] text-white/40 hover:border-white/20 hover:text-white/60'
-                      }`}
-                    >
-                      <span className="text-xl">{roleInfo[type]?.icon}</span>
-                      {type}
-                    </button>
-                  ))}
-                </div>
-                {userType && roleInfo[userType] && (
-                  <p className="text-xs text-white/30 text-center">{roleInfo[userType].desc}</p>
-                )}
-              </div>
-            )}
-
-            <div className={`grid ${isFarmerOrBuyer ? 'md:grid-cols-2' : 'grid-cols-1'} gap-5`}>
+            <div className={`grid ${isUserSignup ? 'md:grid-cols-2' : 'grid-cols-1'} gap-5`}>
               {/* Primary fields */}
               <div className="space-y-4">
                 {activeTab === 'signup' && (
@@ -253,32 +212,32 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
                 </div>
               </div>
 
-              {/* Agricultural fields */}
-              {isFarmerOrBuyer && (
+              {/* Additional fields optional but useful for all users in agricultural settings */}
+              {isUserSignup && (
                 <div className="space-y-4 animate-reveal">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-1.5 block">
-                      <Ruler className="w-3 h-3" /> {userType === 'Farmer' ? 'Farm Size (Hectares)' : 'Warehouse Size (sqm)'}
+                      <Ruler className="w-3 h-3" /> Farm/Warehouse Size
                     </label>
-                    <input required type="number" value={farmSize} onChange={(e) => setFarmSize(e.target.value)}
+                    <input type="number" value={farmSize} onChange={(e) => setFarmSize(e.target.value)}
                       placeholder="e.g. 100"
                       className="w-full bg-white/[0.05] border border-lime-400/20 rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-1.5 block">
-                      <MapPin className="w-3 h-3" /> {userType === 'Farmer' ? 'Farm Location' : 'Warehouse Location'}
+                      <MapPin className="w-3 h-3" /> Location
                     </label>
-                    <input required type="text" value={farmLocation} onChange={(e) => setFarmLocation(e.target.value)}
+                    <input type="text" value={farmLocation} onChange={(e) => setFarmLocation(e.target.value)}
                       placeholder="State, Region"
                       className="w-full bg-white/[0.05] border border-lime-400/20 rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-1.5 block">
-                      <Sprout className="w-3 h-3" /> Primary Crops / Products
+                      <Sprout className="w-3 h-3" /> Primary Interests (Crops/Products)
                     </label>
-                    <input required type="text" value={cropsFarming} onChange={(e) => setCropsFarming(e.target.value)}
+                    <input type="text" value={cropsFarming} onChange={(e) => setCropsFarming(e.target.value)}
                       placeholder="e.g. Cocoa, Cassava"
                       className="w-full bg-white/[0.05] border border-lime-400/20 rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
                     />
@@ -287,19 +246,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
               )}
             </div>
 
-            {/* Referral & Submit */}
+            {/* Submit */}
             <div className="space-y-4">
-              {isFarmerOrBuyer && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-1.5 block">
-                    <Hash className="w-3 h-3" /> Agent Referral Code (optional)
-                  </label>
-                  <input type="text" value={agentReferralCode} onChange={(e) => setAgentReferralCode(e.target.value.toUpperCase())}
-                    placeholder="e.g. AGR-1234"
-                    className="w-full bg-white/[0.05] border border-white/[0.08] rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm font-mono tracking-wider"
-                  />
-                </div>
-              )}
 
               <button
                 disabled={loading}

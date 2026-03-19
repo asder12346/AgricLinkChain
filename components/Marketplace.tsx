@@ -214,7 +214,7 @@ const Marketplace: React.FC<MarketplaceProps> = ({
                   className="w-full bg-[#0A1D11] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 group-hover:bg-lime-400 group-hover:text-[#0A1D11] transition-all shadow-xl shadow-neutral-200"
                 >
                   <ShoppingCart className="w-5 h-5" />
-                  {userRole === 'Farmer' ? 'Manage Listing' : 'Initiate Order'}
+                  {'Initiate Order'}
                 </button>
 
               </div>
