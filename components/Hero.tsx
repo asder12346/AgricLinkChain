@@ -108,8 +108,8 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
             {/* Main image */}
             <div className="relative rounded-[2rem] overflow-hidden border border-white/[0.1] shadow-2xl">
               <img
-                src="https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80&w=900"
-                alt="Farmer with technology"
+                src="https://cdn.businessday.ng/2016/12/farmers.jpg"
+                alt="Farmers at work"
                 className="w-full h-[480px] object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#071210]/80 via-transparent to-transparent" />
@@ -141,12 +141,7 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 opacity-40">
-        <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-1.5">
-          <div className="w-1 h-2 bg-white rounded-full animate-bounce" />
-        </div>
-      </div>
+
     </div>
   );
 };

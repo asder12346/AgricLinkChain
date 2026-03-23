@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import LogoCloud from './components/LogoCloud';
-import Features from './components/Features';
+import FeaturesCards from './components/ui/feature-shader-cards';
 import Marketplace from './components/Marketplace';
 import Stats from './components/Stats';
 import Mission from './components/Mission';
@@ -155,8 +155,8 @@ const App: React.FC = () => {
         <LogoCloud />
 
 
-        <section id="solutions" className="py-20 md:py-32">
-          <Features />
+        <section id="solutions">
+          <FeaturesCards />
         </section>
 
         <section id="marketplace" className="py-20 md:py-32 bg-white text-[#0A1D11]">
