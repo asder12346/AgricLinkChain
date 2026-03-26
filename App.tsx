@@ -145,15 +145,20 @@ const App: React.FC = () => {
 
   if (view === 'admin-dashboard') {
     if (!isAdminAuth) {
-      setView('admin-login');
-      return null;
+      return (
+        <Suspense fallback={<SectionFallback />}>
+          <AdminLogin
+            onLoginSuccess={() => {
+              setIsAdminAuth(true);
+              setView('admin-dashboard');
+            }}
+            onBack={() => setView('landing')}
+          />
+        </Suspense>
+      );
     }
 
-    return (
-      <Suspense fallback={<SectionFallback />}>
-        <AdminDashboard onSignOut={handleSignOut} />
-      </Suspense>
-    );
+    return <Suspense fallback={<SectionFallback />}><AdminDashboard onSignOut={handleSignOut} /></Suspense>;
   }
 
   if (view === 'dashboard' && user) {
