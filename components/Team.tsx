@@ -74,6 +74,8 @@ const Team: React.FC = () => {
             <img
               src={team[0].image}
               alt={team[0].name}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full min-h-[340px] object-cover object-center"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#09120c] hidden lg:block" />
@@ -156,6 +158,8 @@ const Team: React.FC = () => {
               <img
                 src={team[1].image}
                 alt={team[1].name}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover object-top filter contrast-[1.05]"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#09120c] hidden sm:block" />

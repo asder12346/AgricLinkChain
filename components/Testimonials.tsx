@@ -73,7 +73,7 @@ const Testimonials: React.FC = () => {
               </div>
               {/* Author */}
               <div className="flex items-center gap-3">
-                <img src={story.img} alt={story.name} className="w-12 h-12 rounded-2xl object-cover" />
+                <img src={story.img} alt={story.name} loading="lazy" decoding="async" className="w-12 h-12 rounded-2xl object-cover" />
                 <div>
                   <div className="font-bold text-[#071210]">{story.name}</div>
                   <div className="text-xs text-neutral-400">{story.location}</div>

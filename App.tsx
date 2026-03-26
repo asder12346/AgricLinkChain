@@ -1,21 +1,29 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, lazy } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import FeaturesCards from './components/ui/feature-shader-cards';
-import Marketplace from './components/Marketplace';
-import Stats from './components/Stats';
-import Mission from './components/Mission';
-import Testimonials from './components/Testimonials';
-import FAQ from './components/FAQ';
-import Contact from './components/Contact';
-import Footer from './components/Footer';
-import Team from './components/Team';
-import AuthPage from './pages/AuthPage';
-import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminLogin from './pages/AdminLogin';
+const FeaturesCards = lazy(() => import('./components/ui/feature-shader-cards'));
+const Marketplace = lazy(() => import('./components/Marketplace'));
+const Stats = lazy(() => import('./components/Stats'));
+const Mission = lazy(() => import('./components/Mission'));
+const Testimonials = lazy(() => import('./components/Testimonials'));
+const FAQ = lazy(() => import('./components/FAQ'));
+const Contact = lazy(() => import('./components/Contact'));
+const Footer = lazy(() => import('./components/Footer'));
+const Team = lazy(() => import('./components/Team'));
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
 import { supabase } from './lib/supabase';
+
+const SectionFallback = () => (
+  <div className="py-20 md:py-32">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="h-64 rounded-[2rem] bg-white/5 animate-pulse" />
+    </div>
+  </div>
+);
 
 const App: React.FC = () => {
   const [view, setView] = useState<'landing' | 'auth' | 'dashboard' | 'admin-dashboard' | 'admin-login'>('landing');
@@ -116,7 +124,11 @@ const App: React.FC = () => {
   };
 
   if (view === 'auth') {
-    return <AuthPage onBack={() => setView('landing')} initialType={authRole} />;
+    return (
+      <Suspense fallback={<SectionFallback />}>
+        <AuthPage onBack={() => setView('landing')} initialType={authRole} />
+      </Suspense>
+    );
   }
 
   if (view === 'admin-login') {
@@ -137,11 +149,19 @@ const App: React.FC = () => {
       return null;
     }
 
-    return <AdminDashboard onSignOut={handleSignOut} />;
+    return (
+      <Suspense fallback={<SectionFallback />}>
+        <AdminDashboard onSignOut={handleSignOut} />
+      </Suspense>
+    );
   }
 
   if (view === 'dashboard' && user) {
-    return <Dashboard user={user} onSignOut={handleSignOut} onGoHome={() => { }} />;
+    return (
+      <Suspense fallback={<SectionFallback />}>
+        <Dashboard user={user} onSignOut={handleSignOut} onGoHome={() => { }} />
+      </Suspense>
+    );
   }
 
   return (
@@ -152,44 +172,61 @@ const App: React.FC = () => {
           <Hero onStart={() => handleJoin('Farmer')} />
         </section>
 
-
         <section id="solutions">
-          <FeaturesCards />
+          <Suspense fallback={<SectionFallback />}>
+            <FeaturesCards />
+          </Suspense>
         </section>
 
         <section id="marketplace" className="py-20 md:py-32 bg-white text-[#0A1D11]">
-          <Marketplace onInitiateOrder={() => {
-            if (!user) {
-              handleJoin('Buyer');
-            } else {
-              setView('dashboard');
-            }
-          }} />
+          <Suspense fallback={<SectionFallback />}>
+            <Marketplace onInitiateOrder={() => {
+              if (!user) {
+                handleJoin('Buyer');
+              } else {
+                setView('dashboard');
+              }
+            }} />
+          </Suspense>
         </section>
 
-        <Stats />
+        <Suspense fallback={<SectionFallback />}>
+          <Stats />
+        </Suspense>
 
         <section id="impact" className="py-20 md:py-32">
-          <Mission onJoin={handleJoin} />
+          <Suspense fallback={<SectionFallback />}>
+            <Mission onJoin={handleJoin} />
+          </Suspense>
         </section>
 
         <section id="team" className="py-20 md:py-32">
-          <Team />
+          <Suspense fallback={<SectionFallback />}>
+            <Team />
+          </Suspense>
         </section>
 
         <section id="stories" className="py-20 md:py-32 bg-neutral-50 text-[#0A1D11]">
-          <Testimonials />
+          <Suspense fallback={<SectionFallback />}>
+            <Testimonials />
+          </Suspense>
         </section>
 
         <section id="faq" className="py-20 md:py-32 bg-white text-[#0A1D11]">
-          <FAQ />
+          <Suspense fallback={<SectionFallback />}>
+            <FAQ />
+          </Suspense>
         </section>
 
         <section id="contact" className="py-20 md:py-32">
-          <Contact />
+          <Suspense fallback={<SectionFallback />}>
+            <Contact />
+          </Suspense>
         </section>
       </main>
-      <Footer />
+      <Suspense fallback={null}>
+        <Footer />
+      </Suspense>
     </div>
   );
 };
