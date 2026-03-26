@@ -35,37 +35,50 @@ const App: React.FC = () => {
   const [isAdminAuth, setIsAdminAuth] = useState(localStorage.getItem('agri_admin_auth') === 'true');
 
   const loadProfileAndRoute = async (sessionUser: any, path: string) => {
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', sessionUser.id)
-      .single();
+    try {
+      const { data: prof, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', sessionUser.id)
+        .single();
 
-    setProfile(prof);
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows found", which is expected for new users
+        console.error('Error fetching profile:', error);
+      }
 
-    if (prof?.user_type === 'Admin') {
-      setView('admin-dashboard');
-      return;
+      setProfile(prof);
+
+      if (prof?.user_type === 'Admin') {
+        setView('admin-dashboard');
+        return;
+      }
+
+      if (path === '/admin-dashboard') {
+        setView('admin-dashboard');
+        return;
+      }
+
+      if (!prof?.onboarding_complete) {
+        setView('onboarding');
+        return;
+      }
+
+      setView('dashboard');
+    } catch (err) {
+      console.error('Unexpected error in loadProfileAndRoute:', err);
+      // Fallback: stay on current view or go to landing if something is fundamentally broken
     }
+  };
 
-    if (path === '/admin-dashboard') {
-      setView('admin-dashboard');
-      return;
-    }
-
-    if (!prof?.onboarding_complete) {
-      setView('onboarding');
-      return;
-    }
-
-    setView('dashboard');
+  const routeAuthenticatedUser = (sessionUser: any) => {
+    void loadProfileAndRoute(sessionUser, window.location.pathname);
   };
 
 
   useEffect(() => {
-    // Initial session check
-    const checkSession = async () => {
+    const initAuth = async () => {
       try {
+        // 1. Initial session check
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
 
@@ -75,16 +88,18 @@ const App: React.FC = () => {
           setView(localStorage.getItem('agri_admin_auth') === 'true' ? 'admin-dashboard' : 'admin-login');
         } else if (session?.user) {
           setUser(session.user);
-          await loadProfileAndRoute(session.user, path);
+          // Don't await here to avoid blocking 'loading' state
+          routeAuthenticatedUser(session.user);
         }
       } catch (error) {
-        console.error('Error checking session:', error);
+        console.error('Error during auth initialization:', error);
       } finally {
+        // ALWAYS stop loading after the basic session check
         setLoading(false);
       }
     };
 
-    checkSession();
+    initAuth();
 
     // Global auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -93,7 +108,7 @@ const App: React.FC = () => {
 
       if (session?.user) {
         setUser(session.user);
-        await loadProfileAndRoute(session.user, path);
+        routeAuthenticatedUser(session.user);
       } else {
         setUser(null);
         setProfile(null);
@@ -104,28 +119,12 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Effect to prevent logged-in users from seeing the landing page
+  // Sync profile when user changes if not already set
   useEffect(() => {
     if (!loading && user && view === 'landing') {
-      const checkRole = async () => {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('user_type, onboarding_complete')
-          .eq('id', user.id)
-          .single();
-
-        if (profile?.user_type === 'Admin') {
-          setView('admin-dashboard');
-        } else if (!profile?.onboarding_complete) {
-          setView('onboarding');
-        } else {
-          setView('dashboard');
-        }
-      };
-      checkRole();
-
+      routeAuthenticatedUser(user);
     }
-  }, [user, view, loading]);
+  }, [user, loading, view, profile]);
 
   if (loading) {
     return (
@@ -151,7 +150,7 @@ const App: React.FC = () => {
   if (view === 'auth') {
     return (
       <Suspense fallback={<SectionFallback />}>
-        <AuthPage onBack={() => setView('landing')} initialType={authRole} />
+        <AuthPage onBack={() => (user ? routeAuthenticatedUser(user) : setView('landing'))} initialType={authRole} />
       </Suspense>
     );
   }
@@ -162,7 +161,7 @@ const App: React.FC = () => {
         <OnboardingPage
           user={user}
           profile={profile}
-          onBack={() => setView('landing')}
+          onBack={() => routeAuthenticatedUser(user)}
           onComplete={() => setView('dashboard')}
         />
       </Suspense>
@@ -177,7 +176,7 @@ const App: React.FC = () => {
             setIsAdminAuth(true);
             setView('admin-dashboard');
           }}
-          onBack={() => setView('landing')}
+          onBack={() => (user ? routeAuthenticatedUser(user) : setView('landing'))}
         />
       </Suspense>
     );
@@ -192,7 +191,7 @@ const App: React.FC = () => {
               setIsAdminAuth(true);
               setView('admin-dashboard');
             }}
-            onBack={() => setView('landing')}
+            onBack={() => (user ? routeAuthenticatedUser(user) : setView('landing'))}
           />
         </Suspense>
       );
@@ -206,6 +205,14 @@ const App: React.FC = () => {
       <Suspense fallback={<SectionFallback />}>
         <Dashboard user={user} onSignOut={handleSignOut} onGoHome={() => { }} />
       </Suspense>
+    );
+  }
+
+  if (user && view === 'landing') {
+    return (
+      <div className="min-h-screen bg-[#0A1D11] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-lime-400 border-t-transparent rounded-full animate-spin"></div>
+      </div>
     );
   }
 
