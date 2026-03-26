@@ -147,11 +147,11 @@ export default function FeaturesCards() {
           {features.map((feature, index) => {
             const shaderConfig = getShaderConfig(index)
             return (
-              <div key={index} className="relative h-[420px] rounded-[40px] p-[2px] overflow-hidden">
+              <div key={index} className="relative h-[360px] rounded-[32px] p-[1.5px] overflow-hidden">
                 {/* Static Border */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-50" />
                 
-                <div className="relative h-full w-full rounded-[38px] overflow-hidden bg-[#0A1D11]">
+                <div className="relative h-full w-full rounded-[30px] overflow-hidden bg-[#0A1D11]">
                   {/* Shader Background - Static Opacity */}
                   <div className="absolute inset-0 opacity-50">
                     <Warp
@@ -171,26 +171,26 @@ export default function FeaturesCards() {
                   </div>
 
                   {/* Content Overlay */}
-                  <div className="relative z-10 p-10 h-full flex flex-col justify-end bg-gradient-to-t from-black/95 via-black/40 to-transparent">
+                  <div className="relative z-10 p-8 h-full flex flex-col justify-end bg-gradient-to-t from-black/95 via-black/40 to-transparent">
                     {/* Icon with Glass background - No Scale/Rotate */}
-                    <div className="absolute top-10 left-10 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xl">
+                    <div className="absolute top-8 left-8 p-2.5 rounded-lg bg-white/5 border border-white/10 backdrop-blur-xl">
                       <div className="text-lime-400">
                         {feature.icon}
                       </div>
                     </div>
 
-                    <h3 className="text-3xl font-bold mb-4 text-white">
+                    <h3 className="text-2xl font-bold mb-3 text-white">
                       {feature.title}
                     </h3>
 
-                    <p className="leading-relaxed text-white/60 font-medium">
+                    <p className="leading-relaxed text-white/50 font-medium text-sm line-clamp-2">
                       {feature.description}
                     </p>
 
-                    <div className="mt-8 flex items-center justify-between">
-                      <div className="flex items-center text-sm font-bold text-lime-400 cursor-pointer">
-                        <span className="mr-2">Explore Solutions</span>
-                        <ArrowRight className="w-5 h-5" />
+                    <div className="mt-6 flex items-center justify-between">
+                      <div className="flex items-center text-xs font-bold text-lime-400 cursor-pointer">
+                        <span className="mr-2">Learn More</span>
+                        <ArrowRight className="w-4 h-4" />
                       </div>
                       
                       {/* Decorative dot - Non-animated */}

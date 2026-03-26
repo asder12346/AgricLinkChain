@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ArrowLeft, Loader2, AlertCircle, Hash, CheckCircle2, Ruler, MapPin, Sprout, ShieldCheck, Eye, EyeOff, Leaf } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Ruler, MapPin, Sprout, ShieldCheck, Eye, EyeOff, Leaf, ShoppingBag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface AuthPageProps {
@@ -8,20 +8,24 @@ interface AuthPageProps {
   initialType?: string;
 }
 
-const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'User' }) => {
+const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) => {
+  const startingRole = initialType === 'Buyer' ? 'Buyer' : 'Farmer';
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signup');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPass, setShowPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [userType, setUserType] = useState(initialType);
-  const [farmSize, setFarmSize] = useState('');
-  const [farmLocation, setFarmLocation] = useState('');
-  const [cropsFarming, setCropsFarming] = useState('');
+  const [userType, setUserType] = useState(startingRole);
+  const [location, setLocation] = useState('');
+  const [operationSize, setOperationSize] = useState('');
+  const [operationRegion, setOperationRegion] = useState('');
+  const [productFocus, setProductFocus] = useState('');
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,21 +33,36 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'User' }) => 
     setError(null);
     try {
       if (activeTab === 'signup') {
-        const { error: authError } = await supabase.auth.signUp({
+        if (password !== confirmPassword) {
+          throw new Error('Passwords do not match');
+        }
+
+        const signupProfile = {
+          full_name: fullName,
+          user_type: userType,
+          location,
+          farm_size: operationSize,
+          farm_location: operationRegion,
+          crops_farming: productFocus,
+          verified: true,
+        };
+
+        const { data, error: authError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: {
-              full_name: fullName,
-              user_type: userType,
-              farm_size: farmSize,
-              farm_location: farmLocation,
-              crops_farming: cropsFarming,
-              verified: true,
-            },
+            data: signupProfile,
           },
         });
         if (authError) throw authError;
+
+        if (data.user) {
+          await supabase
+            .from('profiles')
+            .update(signupProfile)
+            .eq('id', data.user.id);
+        }
+
         setSuccess(true);
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
@@ -54,8 +73,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'User' }) => 
       setLoading(false);
     }
   };
-
-
+  
+  const isSignup = activeTab === 'signup';
+  const isFarmerSignup = isSignup && userType === 'Farmer';
+  const isBuyerSignup = isSignup && userType === 'Buyer';
+  const showProfileFields = isFarmerSignup || isBuyerSignup;
 
   if (success) {
     return (
@@ -73,8 +95,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'User' }) => 
       </div>
     );
   }
-
-  const isUserSignup = activeTab === 'signup' && userType === 'User';
 
   return (
     <div className="min-h-screen bg-[#071210] flex">
@@ -142,7 +162,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'User' }) => 
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
-        <div className={`w-full ${isUserSignup ? 'max-w-3xl' : 'max-w-md'} space-y-7 transition-all duration-500`}>
+        <div className={`w-full ${showProfileFields ? 'max-w-3xl' : 'max-w-md'} space-y-7 transition-all duration-500`}>
           {/* Header */}
           <div className="text-center space-y-1">
             <h2 className="text-3xl font-black text-white">
@@ -177,17 +197,59 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'User' }) => 
               </div>
             )}
 
-            <div className={`grid ${isUserSignup ? 'md:grid-cols-2' : 'grid-cols-1'} gap-5`}>
+            <div className={`grid ${showProfileFields ? 'md:grid-cols-2' : 'grid-cols-1'} gap-5`}>
               {/* Primary fields */}
               <div className="space-y-4">
                 {activeTab === 'signup' && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">Full Name</label>
-                    <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Ibrahim Musa"
-                      className="w-full bg-white/[0.05] border border-white/[0.1] rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">Register As</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {([
+                          { value: 'Farmer', label: 'Farmer', icon: Sprout },
+                          { value: 'Buyer', label: 'Buyer', icon: ShoppingBag },
+                        ] as const).map((role) => (
+                          <button
+                            key={role.value}
+                            type="button"
+                            onClick={() => setUserType(role.value)}
+                            className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-black transition-all ${
+                              userType === role.value
+                                ? 'border-lime-400 bg-lime-400 text-[#071210]'
+                                : 'border-white/[0.1] bg-white/[0.04] text-white/70 hover:text-white'
+                            }`}
+                          >
+                            <role.icon className="w-4 h-4" />
+                            {role.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">
+                        {userType === 'Farmer' ? 'Farmer / Business Name' : 'Buyer / Company Name'}
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder={userType === 'Farmer' ? 'Ibrahim Musa Farms' : 'Lagos Grain Buyers Ltd'}
+                        className="w-full bg-white/[0.05] border border-white/[0.1] rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">Primary Location</label>
+                      <input
+                        required
+                        type="text"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="State, City"
+                        className="w-full bg-white/[0.05] border border-white/[0.1] rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
+                      />
+                    </div>
+                  </>
                 )}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">Email</label>
@@ -210,35 +272,68 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'User' }) => 
                     </button>
                   </div>
                 </div>
+                {activeTab === 'signup' && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">Confirm Password</label>
+                    <div className="relative">
+                      <input
+                        required
+                        type={showConfirmPass ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-white/[0.05] border border-white/[0.1] rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm pr-12"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPass(!showConfirmPass)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                      >
+                        {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Additional fields optional but useful for all users in agricultural settings */}
-              {isUserSignup && (
+              {showProfileFields && (
                 <div className="space-y-4 animate-reveal">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-1.5 block">
-                      <Ruler className="w-3 h-3" /> Farm/Warehouse Size
+                      <Ruler className="w-3 h-3" /> {isFarmerSignup ? 'Farm Size' : 'Purchase / Warehouse Size'}
                     </label>
-                    <input type="number" value={farmSize} onChange={(e) => setFarmSize(e.target.value)}
-                      placeholder="e.g. 100"
+                    <input
+                      required
+                      type="text"
+                      value={operationSize}
+                      onChange={(e) => setOperationSize(e.target.value)}
+                      placeholder={isFarmerSignup ? 'e.g. 100 hectares' : 'e.g. 50 tons monthly'}
                       className="w-full bg-white/[0.05] border border-lime-400/20 rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-1.5 block">
-                      <MapPin className="w-3 h-3" /> Location
+                      <MapPin className="w-3 h-3" /> {isFarmerSignup ? 'Farm Region' : 'Delivery / Sourcing Region'}
                     </label>
-                    <input type="text" value={farmLocation} onChange={(e) => setFarmLocation(e.target.value)}
-                      placeholder="State, Region"
+                    <input
+                      required
+                      type="text"
+                      value={operationRegion}
+                      onChange={(e) => setOperationRegion(e.target.value)}
+                      placeholder={isFarmerSignup ? 'State, Region' : 'Preferred buying region'}
                       className="w-full bg-white/[0.05] border border-lime-400/20 rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-1.5 block">
-                      <Sprout className="w-3 h-3" /> Primary Interests (Crops/Products)
+                      <Sprout className="w-3 h-3" /> {isFarmerSignup ? 'Crops / Produce' : 'Products Needed'}
                     </label>
-                    <input type="text" value={cropsFarming} onChange={(e) => setCropsFarming(e.target.value)}
-                      placeholder="e.g. Cocoa, Cassava"
+                    <input
+                      required
+                      type="text"
+                      value={productFocus}
+                      onChange={(e) => setProductFocus(e.target.value)}
+                      placeholder={isFarmerSignup ? 'e.g. Cocoa, Cassava' : 'e.g. Maize, Rice, Sesame'}
                       className="w-full bg-white/[0.05] border border-lime-400/20 rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
                     />
                   </div>

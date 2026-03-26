@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, LogOut, LayoutDashboard, ChevronDown } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Wheat } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface NavbarProps {
@@ -23,6 +23,7 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
     { name: 'Solutions', href: '#solutions' },
     { name: 'Marketplace', href: '#marketplace' },
     { name: 'Impact', href: '#impact' },
+    { name: 'Team', href: '#team' },
     { name: 'Stories', href: '#stories' },
   ];
 
@@ -40,7 +41,7 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
     <>
       <nav className={`fixed w-full z-50 transition-all duration-500 ${
         scrolled
-          ? 'glass-dark border-b border-white/[0.06] shadow-2xl shadow-black/30 py-3'
+          ? 'glass-dark border-b border-[#d7b464]/10 shadow-2xl shadow-black/30 py-3'
           : 'bg-transparent py-5'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -51,8 +52,8 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="flex items-center gap-2.5 group"
             >
-              <div className="relative w-9 h-9 rounded-xl overflow-hidden shadow-lg group-hover:scale-105 transition-transform duration-300">
-                <img src="/logo.png" className="w-full h-full object-cover" alt="AgricLinkChain Logo" />
+              <div className="relative w-10 h-10 rounded-2xl overflow-hidden shadow-lg group-hover:scale-105 transition-transform duration-300 bg-[#d7b464] flex items-center justify-center">
+                <Wheat className="w-5 h-5 text-[#102014]" />
               </div>
               <span className="text-[17px] font-extrabold tracking-tight text-white group-hover:text-lime-300 transition-colors">
                 Agric<span className="text-lime-400">Link</span>Chain
@@ -61,12 +62,12 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
 
             {/* Desktop Nav Links */}
             <div className="hidden md:flex items-center">
-              <div className="flex items-center gap-1 bg-white/[0.04] border border-white/[0.07] rounded-full px-2 py-1.5">
+              <div className="flex items-center gap-1 bg-[#f7f3e8]/[0.05] border border-[#d7b464]/10 rounded-full px-2 py-1.5 backdrop-blur-xl">
                 {navLinks.map((link) => (
                   <button
                     key={link.name}
                     onClick={() => scrollToSection(link.href)}
-                    className="px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide text-white/55 hover:text-white hover:bg-white/[0.08] transition-all duration-200"
+                    className="px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide text-white/55 hover:text-white hover:bg-[#d7b464]/10 transition-all duration-200"
                   >
                     {link.name}
                   </button>
@@ -80,7 +81,7 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
                 <>
                   <button
                     onClick={onGoDashboard}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold tracking-wide text-white border border-white/10 bg-white/[0.06] hover:bg-white/[0.12] hover:border-white/20 transition-all"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold tracking-wide text-white border border-[#d7b464]/10 bg-[#f7f3e8]/[0.06] hover:bg-[#d7b464]/10 hover:border-[#d7b464]/20 transition-all"
                   >
                     <LayoutDashboard className="w-3.5 h-3.5" />
                     Dashboard
@@ -114,7 +115,7 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
             {/* Mobile Toggle */}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden p-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white hover:bg-white/[0.1] transition-all"
+              className="md:hidden p-2.5 rounded-xl bg-[#f7f3e8]/[0.06] border border-[#d7b464]/10 text-white hover:bg-[#d7b464]/10 transition-all"
             >
               {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -128,10 +129,10 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
 
         {/* Drawer */}
-        <div className={`absolute top-0 right-0 h-full w-72 bg-[#071210] border-l border-white/[0.07] transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-          <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+        <div className={`absolute top-0 right-0 h-full w-72 bg-[#071210] border-l border-[#d7b464]/10 transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className="flex items-center justify-between p-5 border-b border-[#d7b464]/10">
             <span className="text-[15px] font-extrabold text-white">Menu</span>
-            <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-lg bg-white/[0.06] text-white/60">
+            <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-lg bg-[#f7f3e8]/[0.06] text-white/60">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -140,13 +141,13 @@ const Navbar: React.FC<NavbarProps> = ({ onJoin, onGoDashboard, user }) => {
               <button
                 key={link.name}
                 onClick={() => scrollToSection(link.href)}
-                className="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-white/60 hover:text-white hover:bg-white/[0.05] transition-all"
+                className="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-white/60 hover:text-white hover:bg-[#d7b464]/10 transition-all"
               >
                 {link.name}
               </button>
             ))}
           </div>
-          <div className="p-5 border-t border-white/[0.06] space-y-3">
+          <div className="p-5 border-t border-[#d7b464]/10 space-y-3">
             {user ? (
               <>
                 <button

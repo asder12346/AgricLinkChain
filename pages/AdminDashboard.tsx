@@ -47,7 +47,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
       if (profiles) {
         setAllUsers(profiles);
         setUserStats({
-          users: profiles.filter(p => p.user_type === 'User').length,
+          users: profiles.filter(p => ['User', 'Farmer', 'Buyer'].includes(p.user_type)).length,
           agents: profiles.filter(p => p.user_type === 'Agent').length,
           total: profiles.length
         });
@@ -243,7 +243,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSignOut }) => {
                           <p className="text-[10px] font-mono text-neutral-400">{u.id.slice(0, 13)}...</p>
                         </td>
                         <td className="px-8 py-6">
-                          <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${u.user_type === 'User' ? 'bg-blue-100 text-blue-700' :
+                          <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${u.user_type === 'Buyer' ? 'bg-blue-100 text-blue-700' :
+                            u.user_type === 'Farmer' || u.user_type === 'User' ? 'bg-emerald-100 text-emerald-700' :
                             u.user_type === 'Agent' ? 'bg-lime-100 text-lime-700' : 'bg-neutral-100 text-neutral-700'
                             }`}>{u.user_type}</span>
                         </td>

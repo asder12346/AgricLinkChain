@@ -5,7 +5,7 @@ import {
   Trash2, RefreshCw, Users, Loader2, Save, ShoppingBag, Box, Image as ImageIcon,
   PlusCircle, CheckCircle2, Edit2, Calendar, MapPin, ExternalLink, Wallet, CreditCard,
   ChevronRight, ArrowLeft, Truck, Star, ShieldCheck, UserPlus, Share2, Copy, Camera, Upload,
-  Sprout, Ruler, Info, Search, MoreVertical, Landmark, Banknote
+  Sprout, Ruler, Info, Search, MoreVertical, Landmark, Banknote, Heart, MessageSquare
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import Marketplace from '../components/Marketplace';
@@ -15,6 +15,11 @@ interface DashboardProps {
   onSignOut: () => void;
   onGoHome: () => void;
 }
+
+const isFarmerRole = (role?: string) => role === 'Farmer' || role === 'User';
+const isBuyerRole = (role?: string) => role === 'Buyer' || role === 'User';
+const isTradeRole = (role?: string) => isFarmerRole(role) || isBuyerRole(role);
+const AVATAR_BUCKET = 'app-files';
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
   const [activeTab, setActiveTab] = useState('Overview');
@@ -27,6 +32,31 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
   const [profile, setProfile] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savedProductIds, setSavedProductIds] = useState<string[]>(() => {
+    const stored = localStorage.getItem('agri_saved_products');
+    return stored ? JSON.parse(stored) : [];
+  });
+  const [cartItems, setCartItems] = useState<any[]>(() => {
+    const stored = localStorage.getItem('agri_cart_items');
+    return stored ? JSON.parse(stored) : [];
+  });
+  const [messageDraft, setMessageDraft] = useState('');
+  const [settingsState, setSettingsState] = useState({
+    emailAlerts: true,
+    smsUpdates: false,
+    autoReorder: false,
+    publicProfile: true,
+  });
+  const [paymentMethod, setPaymentMethod] = useState({
+    bankName: '',
+    accountName: '',
+    accountNumber: '',
+  });
+  const [loanRequest, setLoanRequest] = useState({
+    amount: '',
+    purpose: '',
+    cropType: '',
+  });
 
   // Profile Form State
   const [editProfile, setEditProfile] = useState({
@@ -56,6 +86,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
     fetchProfileAndData();
   }, [user.id]);
 
+  useEffect(() => {
+    localStorage.setItem('agri_saved_products', JSON.stringify(savedProductIds));
+  }, [savedProductIds]);
+
+  useEffect(() => {
+    localStorage.setItem('agri_cart_items', JSON.stringify(cartItems));
+  }, [cartItems]);
+
   const fetchProfileAndData = async () => {
     setLoading(true);
     try {
@@ -75,19 +113,24 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
 
       const userRole = prof?.user_type || user.user_metadata?.user_type;
 
-      if (userRole === 'User') {
-        // Fetch listings where user is seller
-        const { data: list } = await supabase.from('listings').select('*').eq('farmer_id', user.id).order('created_at', { ascending: false });
-        if (list) setListings(list);
-        
-        // Fetch orders where user is seller or buyer
-        const { data: ordsSeller } = await supabase.from('orders').select('*').eq('farmer_id', user.id);
-        const { data: ordsBuyer } = await supabase.from('orders').select('*').eq('buyer_id', user.id);
+      if (isTradeRole(userRole)) {
+        if (isFarmerRole(userRole)) {
+          const { data: list } = await supabase.from('listings').select('*').eq('farmer_id', user.id).order('created_at', { ascending: false });
+          if (list) setListings(list);
+        } else {
+          setListings([]);
+        }
+
+        const { data: ordsSeller } = isFarmerRole(userRole)
+          ? await supabase.from('orders').select('*').eq('farmer_id', user.id)
+          : { data: [] as any[] };
+        const { data: ordsBuyer } = isBuyerRole(userRole)
+          ? await supabase.from('orders').select('*').eq('buyer_id', user.id)
+          : { data: [] as any[] };
         const allOrds = [...(ordsSeller || []), ...(ordsBuyer || [])];
         const uniqueOrds = Array.from(new Set(allOrds.map(a => a.id))).map(id => allOrds.find(a => a.id === id));
-        setOrders(uniqueOrds);
+        setOrders(uniqueOrds.filter(Boolean) as any[]);
 
-        // Fetch marketplace data for user to buy
         const { data: marketplace } = await supabase.from('listings').select(`*, profiles:farmer_id (full_name, location)`);
         const defaultMarket = [
           { id: 'm1', name: 'Premium Cocoa Beans', price: 5200, unit: 'kg', stock: 5000, category: 'Grains', image_url: 'https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&q=80&w=600', profiles: { full_name: 'Ondo Cocoa Estate', location: 'Ondo State' } },
@@ -127,41 +170,58 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
 
       const file = event.target.files[0];
 
-      // Basic size check (e.g., 2MB for avatars)
       if (file.size > 2 * 1024 * 1024) {
         throw new Error('Avatar image too large. Please upload an image smaller than 2MB.');
       }
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `avatar_${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Please upload a valid image file.');
+      }
 
-      console.log(`Uploading avatar to: ${filePath} in bucket: app-files`);
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatars/profile.${fileExt}`;
+
+      console.log(`Uploading avatar to: ${filePath} in bucket: ${AVATAR_BUCKET}`);
 
       let { error: uploadError } = await supabase.storage
-        .from('app-files')
-        .upload(filePath, file);
+        .from(AVATAR_BUCKET)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: file.type,
+        });
 
       if (uploadError) {
         console.error("Avatar Storage Upload Error:", uploadError);
-        throw new Error(`Avatar upload failed: ${uploadError.message}. Make sure the 'app-files' bucket exists.`);
+        throw new Error(`Avatar upload failed: ${uploadError.message}. Make sure the '${AVATAR_BUCKET}' bucket exists.`);
       }
 
       const { data } = supabase.storage
-        .from('app-files')
+        .from(AVATAR_BUCKET)
         .getPublicUrl(filePath);
+      const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
 
-      console.log("Avatar upload successful. URL:", data.publicUrl);
+      console.log("Avatar upload successful. URL:", publicUrl);
 
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: data.publicUrl })
+        .update({ avatar_url: publicUrl })
         .eq('id', user.id);
 
       if (updateError) {
         console.error("Profile update error:", updateError);
         throw updateError;
       }
+
+      const { error: authUpdateError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
+
+      if (authUpdateError) {
+        console.error("Auth metadata update error:", authUpdateError);
+      }
+
+      setProfile((current: any) => current ? { ...current, avatar_url: publicUrl } : current);
 
       alert('Profile photo updated successfully!');
       fetchProfileAndData();
@@ -197,7 +257,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
 
       let { error: uploadError } = await supabase.storage
         .from('app-files')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: file.type,
+        });
 
       if (uploadError) {
         console.error("Storage Upload Error:", uploadError);
@@ -210,7 +274,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
 
       console.log("Upload successful. Public URL:", data.publicUrl);
 
-      setNewListing({ ...newListing, image_url: data.publicUrl });
+      setNewListing({ ...newListing, image_url: `${data.publicUrl}?t=${Date.now()}` });
       alert('Product image uploaded successfully!');
     } catch (err: any) {
       console.error("Handle Product Image Upload Catch:", err);
@@ -298,20 +362,102 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
     }
   };
 
+  const handleToggleSaved = (productId: string) => {
+    setSavedProductIds((current) =>
+      current.includes(productId) ? current.filter((id) => id !== productId) : [...current, productId]
+    );
+  };
+
+  const handleAddToCart = (product: any) => {
+    if (!product?.id) return;
+    setCartItems((current) => {
+      const existing = current.find((item) => item.id === product.id);
+      if (existing) {
+        return current.map((item) => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...current, { ...product, quantity: 1 }];
+    });
+  };
+
+  const handleUpdateCartQuantity = (productId: string, delta: number) => {
+    setCartItems((current) =>
+      current
+        .map((item) => item.id === productId ? { ...item, quantity: item.quantity + delta } : item)
+        .filter((item) => item.quantity > 0)
+    );
+  };
+
+  const handleCheckoutCart = async () => {
+    try {
+      for (const item of cartItems) {
+        await handleCreateOrder({ ...item, price: item.price * item.quantity });
+      }
+      setCartItems([]);
+      setActiveTab('Purchase History');
+    } catch (err: any) {
+      alert(err.message || 'Unable to complete checkout');
+    }
+  };
+
+  const handleSendMessage = () => {
+    if (!messageDraft.trim()) return;
+    alert('Message queued successfully.');
+    setMessageDraft('');
+  };
+
+  const handleSavePaymentSettings = () => {
+    alert('Payment settings updated successfully.');
+  };
+
+  const handleSubmitLoanRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from('loan_requests').insert([{
+        farmer_id: user.id,
+        amount: Number(loanRequest.amount),
+        purpose: loanRequest.purpose,
+        crop_type: loanRequest.cropType,
+        farm_size: profile?.farm_size || '',
+      }]);
+      if (error) throw error;
+      alert('Loan request submitted.');
+      setLoanRequest({ amount: '', purpose: '', cropType: '' });
+    } catch (err: any) {
+      alert(err.message || 'Unable to submit loan request');
+    }
+  };
+
   const userRole = profile?.user_type || user.user_metadata?.user_type;
+  const canManageFarm = isFarmerRole(userRole);
+  const canBuyProducts = isBuyerRole(userRole);
   const isVerified = true; // Simulating verification for dashboard aesthetics
+  const farmerOrders = orders.filter((o) => o.farmer_id === user.id);
+  const buyerOrders = orders.filter((o) => o.buyer_id === user.id);
+  const savedProducts = marketProducts.filter((product) => savedProductIds.includes(product.id));
+  const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const conversationCount = canManageFarm ? farmerOrders.length : buyerOrders.length;
+  const messagePartners = (canManageFarm ? farmerOrders : buyerOrders).slice(0, 4);
 
   const menuItems = [
     { name: 'Overview', icon: LayoutDashboard },
     ...(userRole === 'Agent' ? [{ name: 'My Network', icon: Users }] : []),
-    ...(userRole === 'User' ? [
+    ...(canManageFarm ? [
       { name: 'Farmer Dashboard', icon: Sprout },
-      { name: 'Buyer Dashboard', icon: ShoppingBag },
       { name: 'My Farm Products', icon: Package },
-      { name: 'Purchase History', icon: Truck },
+      { name: 'Messages', icon: MessageSquare },
+      { name: 'Payments', icon: Wallet },
       { name: 'Loans & Financing', icon: Banknote }
     ] : []),
+    ...(canBuyProducts ? [
+      { name: 'Buyer Dashboard', icon: ShoppingBag },
+      { name: 'Saved Products', icon: Heart },
+      { name: 'Cart', icon: ShoppingCart },
+      { name: 'Purchase History', icon: Truck },
+      { name: 'Messages', icon: MessageSquare },
+      { name: 'Payments', icon: CreditCard },
+    ] : []),
     { name: 'Profile', icon: UserIcon },
+    { name: 'Settings', icon: Settings },
   ];
 
   if (loading && !profile) {
@@ -483,7 +629,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                 </div>
               </div>
 
-              {userRole === 'User' && listings.length > 0 && (
+              {canManageFarm && listings.length > 0 && (
                 <div className="space-y-8">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xl font-black flex items-center gap-3">
@@ -561,7 +707,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                             </div>
                           </td>
                           <td className="px-10 py-8">
-                            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${entity.user_type === 'User' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-orange-50 text-orange-600 border border-orange-100'}`}>
+                            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${isFarmerRole(entity.user_type) ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-orange-50 text-orange-600 border border-orange-100'}`}>
                               {entity.user_type} Node
                             </span>
                           </td>
@@ -606,7 +752,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
             </div>
           )}
 
-          {activeTab === 'My Farm Products' && userRole === 'User' && (
+          {activeTab === 'My Farm Products' && canManageFarm && (
             <div className="space-y-10 animate-in fade-in duration-500">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
@@ -708,7 +854,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
             </div>
           )}
 
-          {activeTab === 'Farmer Dashboard' && userRole === 'User' && (
+          {activeTab === 'Farmer Dashboard' && canManageFarm && (
             <div className="space-y-10 animate-in fade-in duration-500">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
@@ -753,13 +899,148 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
             </div>
           )}
 
-          {activeTab === 'Buyer Dashboard' && userRole === 'User' && (
-            <div className="animate-in fade-in duration-500">
+          {activeTab === 'Buyer Dashboard' && canBuyProducts && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="bg-white rounded-[3rem] p-8 border border-neutral-100 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Saved Products</p>
+                  <p className="text-4xl font-black mt-3">{savedProducts.length}</p>
+                </div>
+                <div className="bg-white rounded-[3rem] p-8 border border-neutral-100 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Cart Items</p>
+                  <p className="text-4xl font-black mt-3">{cartItems.reduce((sum, item) => sum + item.quantity, 0)}</p>
+                </div>
+                <div className="bg-[#0A1D11] rounded-[3rem] p-8 shadow-2xl text-white">
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Cart Value</p>
+                  <p className="text-4xl font-black mt-3 text-lime-400">₦{cartTotal.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[3rem] p-10 border border-neutral-100 shadow-sm">
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h2 className="text-3xl font-black text-[#0A1D11]">Buyer Dashboard</h2>
+                    <p className="text-neutral-500 font-medium">Discover products, save promising listings, and queue orders for checkout.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {marketProducts.slice(0, 6).map((product) => (
+                    <div key={product.id} className="rounded-[2rem] border border-neutral-100 bg-neutral-50 overflow-hidden">
+                      <div className="h-44 bg-neutral-100">
+                        <img src={product.image_url} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="p-6 space-y-4">
+                        <div>
+                          <h3 className="text-lg font-black">{product.name}</h3>
+                          <p className="text-xs text-neutral-500">{product.profiles?.location || 'Regional Origin'}</p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="font-black text-lime-600">₦{product.price.toLocaleString()}</p>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{product.stock} {product.unit}</p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <button onClick={() => handleToggleSaved(product.id)} className={`rounded-2xl py-3 text-[10px] font-black uppercase tracking-widest transition-all ${savedProductIds.includes(product.id) ? 'bg-red-50 text-red-500' : 'bg-white text-neutral-500 border border-neutral-100'}`}>Save</button>
+                          <button onClick={() => handleAddToCart(product)} className="rounded-2xl py-3 text-[10px] font-black uppercase tracking-widest bg-neutral-900 text-white">Cart</button>
+                          <button onClick={() => handleCreateOrder(product)} className="rounded-2xl py-3 text-[10px] font-black uppercase tracking-widest bg-lime-400 text-[#0A1D11]">Order</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <Marketplace products={marketProducts} userRole={userRole} onOrder={handleCreateOrder} />
             </div>
           )}
 
-          {activeTab === 'Purchase History' && userRole === 'User' && (
+          {activeTab === 'Saved Products' && canBuyProducts && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <div>
+                <h2 className="text-3xl font-black text-[#0A1D11]">Saved Products</h2>
+                <p className="text-neutral-500 font-medium">Keep track of listings you may want to buy next.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                {savedProducts.map((product) => (
+                  <div key={product.id} className="bg-white rounded-[3rem] p-8 border border-neutral-100 shadow-sm space-y-6">
+                    <div className="h-48 rounded-[2rem] overflow-hidden bg-neutral-100">
+                      <img src={product.image_url} className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black">{product.name}</h3>
+                      <p className="text-sm text-neutral-500">{product.profiles?.full_name || 'Verified Producer'}</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-lime-600">₦{product.price.toLocaleString()}</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{product.stock} {product.unit}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button onClick={() => handleAddToCart(product)} className="py-4 rounded-2xl bg-[#0A1D11] text-white text-[10px] font-black uppercase tracking-widest">Add to Cart</button>
+                      <button onClick={() => handleToggleSaved(product.id)} className="py-4 rounded-2xl bg-red-50 text-red-500 text-[10px] font-black uppercase tracking-widest">Remove</button>
+                    </div>
+                  </div>
+                ))}
+                {savedProducts.length === 0 && (
+                  <div className="md:col-span-3 bg-white rounded-[3rem] p-20 border border-neutral-100 shadow-sm text-center">
+                    <Heart className="w-12 h-12 text-neutral-200 mx-auto mb-6" />
+                    <p className="text-lg font-black text-[#0A1D11]/30 uppercase tracking-widest">No saved products yet</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Cart' && canBuyProducts && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                  <h2 className="text-3xl font-black text-[#0A1D11]">Cart</h2>
+                  <p className="text-neutral-500 font-medium">Review quantities and convert selections into confirmed orders.</p>
+                </div>
+                <div className="bg-[#0A1D11] text-white px-8 py-5 rounded-[2rem]">
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Total</p>
+                  <p className="text-3xl font-black text-lime-400">₦{cartTotal.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="space-y-6">
+                {cartItems.map((item) => (
+                  <div key={item.id} className="bg-white rounded-[3rem] p-8 border border-neutral-100 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div className="flex items-center gap-6">
+                      <div className="w-24 h-24 rounded-[2rem] overflow-hidden bg-neutral-100">
+                        <img src={item.image_url} className="w-full h-full object-cover" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-black">{item.name}</h3>
+                        <p className="text-sm text-neutral-500">{item.profiles?.location || 'Regional Origin'}</p>
+                        <p className="text-sm font-black text-lime-600 mt-2">₦{item.price.toLocaleString()} each</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => handleUpdateCartQuantity(item.id, -1)} className="w-12 h-12 rounded-2xl bg-neutral-100 font-black">-</button>
+                      <span className="w-10 text-center font-black">{item.quantity}</span>
+                      <button onClick={() => handleUpdateCartQuantity(item.id, 1)} className="w-12 h-12 rounded-2xl bg-neutral-100 font-black">+</button>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Line Total</p>
+                      <p className="text-2xl font-black">₦{(item.price * item.quantity).toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+                {cartItems.length === 0 && (
+                  <div className="bg-white rounded-[3rem] p-20 border border-neutral-100 shadow-sm text-center">
+                    <ShoppingCart className="w-12 h-12 text-neutral-200 mx-auto mb-6" />
+                    <p className="text-lg font-black text-[#0A1D11]/30 uppercase tracking-widest">Your cart is empty</p>
+                  </div>
+                )}
+              </div>
+              {cartItems.length > 0 && (
+                <button onClick={handleCheckoutCart} className="w-full bg-lime-400 text-[#0A1D11] py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest">
+                  Checkout Cart
+                </button>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'Purchase History' && canBuyProducts && (
             <div className="space-y-10 animate-in fade-in duration-500">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
@@ -805,7 +1086,94 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
             </div>
           )}
 
-          {activeTab === 'Loans & Financing' && userRole === 'User' && (
+          {activeTab === 'Messages' && (canManageFarm || canBuyProducts) && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8">
+                <div className="bg-white rounded-[3rem] border border-neutral-100 shadow-sm p-6 space-y-4">
+                  <h2 className="text-2xl font-black">Messages</h2>
+                  <p className="text-sm text-neutral-500">Trade conversations tied to your live transactions.</p>
+                  <div className="space-y-3">
+                    {messagePartners.map((order) => (
+                      <button key={order.id} className="w-full text-left p-4 rounded-2xl bg-neutral-50 hover:bg-lime-50 transition-all">
+                        <p className="font-black text-sm">{canManageFarm ? `Buyer ${order.buyer_id?.slice(0, 8)}` : `Farmer ${order.farmer_id?.slice(0, 8)}`}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mt-1">Order #{order.id.slice(0, 8)}</p>
+                      </button>
+                    ))}
+                    {messagePartners.length === 0 && (
+                      <div className="p-6 rounded-2xl bg-neutral-50 text-center text-sm font-bold text-neutral-400">No conversations yet.</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-[3rem] border border-neutral-100 shadow-sm p-8 flex flex-col gap-8">
+                  <div>
+                    <h3 className="text-2xl font-black">Trade Coordination</h3>
+                    <p className="text-neutral-500 font-medium">Share logistics, delivery notes, and payment updates.</p>
+                  </div>
+                  <div className="flex-1 space-y-4">
+                    <div className="max-w-xl bg-neutral-100 rounded-[2rem] p-5">
+                      <p className="text-sm font-medium">Hello, I want to confirm packaging, delivery timing, and payment readiness for the next shipment.</p>
+                    </div>
+                    <div className="max-w-xl ml-auto bg-lime-400 rounded-[2rem] p-5 text-[#0A1D11]">
+                      <p className="text-sm font-black">Confirmed. Records are ready and the next update will be shared here.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <input value={messageDraft} onChange={(e) => setMessageDraft(e.target.value)} placeholder="Write a message..." className="flex-1 bg-neutral-50 border border-neutral-100 rounded-[2rem] px-6 py-4 outline-none" />
+                    <button onClick={handleSendMessage} className="px-8 py-4 rounded-[2rem] bg-[#0A1D11] text-white font-black text-xs uppercase tracking-widest">Send</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Payments' && (canManageFarm || canBuyProducts) && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="bg-white rounded-[3rem] p-8 border border-neutral-100 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Completed Transactions</p>
+                  <p className="text-4xl font-black mt-3">{orders.filter((o) => o.status === 'delivered' || o.status === 'Completed').length}</p>
+                </div>
+                <div className="bg-white rounded-[3rem] p-8 border border-neutral-100 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Pending Settlements</p>
+                  <p className="text-4xl font-black mt-3">{orders.filter((o) => o.status === 'pending').length}</p>
+                </div>
+                <div className="bg-[#0A1D11] rounded-[3rem] p-8 shadow-2xl text-white">
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Recorded Value</p>
+                  <p className="text-4xl font-black mt-3 text-lime-400">₦{orders.reduce((sum, order) => sum + (order.total_amount || 0), 0).toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-8">
+                <div className="bg-white rounded-[3rem] p-10 border border-neutral-100 shadow-sm space-y-6">
+                  <h3 className="text-2xl font-black">Settlement Details</h3>
+                  <div className="space-y-4">
+                    <input value={paymentMethod.bankName} onChange={(e) => setPaymentMethod({ ...paymentMethod, bankName: e.target.value })} placeholder="Bank name" className="w-full bg-neutral-50 border border-neutral-100 rounded-[2rem] px-6 py-4 outline-none" />
+                    <input value={paymentMethod.accountName} onChange={(e) => setPaymentMethod({ ...paymentMethod, accountName: e.target.value })} placeholder="Account name" className="w-full bg-neutral-50 border border-neutral-100 rounded-[2rem] px-6 py-4 outline-none" />
+                    <input value={paymentMethod.accountNumber} onChange={(e) => setPaymentMethod({ ...paymentMethod, accountNumber: e.target.value })} placeholder="Account number" className="w-full bg-neutral-50 border border-neutral-100 rounded-[2rem] px-6 py-4 outline-none" />
+                  </div>
+                  <button onClick={handleSavePaymentSettings} className="w-full bg-lime-400 text-[#0A1D11] py-4 rounded-[2rem] font-black text-xs uppercase tracking-widest">Save Payment Setup</button>
+                </div>
+                <div className="bg-white rounded-[3rem] p-10 border border-neutral-100 shadow-sm">
+                  <h3 className="text-2xl font-black mb-8">Recent Settlement Activity</h3>
+                  <div className="space-y-4">
+                    {orders.slice(0, 5).map((order) => (
+                      <div key={order.id} className="flex items-center justify-between p-4 rounded-2xl bg-neutral-50">
+                        <div>
+                          <p className="font-black text-sm">Order #{order.id.slice(0, 8)}</p>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{order.status}</p>
+                        </div>
+                        <p className="font-black">₦{(order.total_amount || 0).toLocaleString()}</p>
+                      </div>
+                    ))}
+                    {orders.length === 0 && <p className="text-sm font-bold text-neutral-400">No settlement activity yet.</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Loans & Financing' && canManageFarm && (
             <div className="space-y-10 animate-in fade-in duration-500">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
@@ -813,14 +1181,30 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                   <p className="text-neutral-500 font-medium">Apply for agricultural loans and track your financing status.</p>
                 </div>
               </div>
-              <div className="bg-white rounded-[3rem] p-16 border border-neutral-100 shadow-sm text-center">
-                <div className="w-24 h-24 bg-lime-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Banknote className="w-10 h-10 text-lime-600" />
+              <div className="grid lg:grid-cols-2 gap-8">
+                <form onSubmit={handleSubmitLoanRequest} className="bg-white rounded-[3rem] p-10 border border-neutral-100 shadow-sm space-y-6">
+                  <h3 className="text-2xl font-black">Request Financing</h3>
+                  <input required type="number" value={loanRequest.amount} onChange={(e) => setLoanRequest({ ...loanRequest, amount: e.target.value })} placeholder="Requested amount" className="w-full bg-neutral-50 border border-neutral-100 rounded-[2rem] px-6 py-4 outline-none" />
+                  <input required type="text" value={loanRequest.cropType} onChange={(e) => setLoanRequest({ ...loanRequest, cropType: e.target.value })} placeholder="Crop or produce type" className="w-full bg-neutral-50 border border-neutral-100 rounded-[2rem] px-6 py-4 outline-none" />
+                  <textarea required value={loanRequest.purpose} onChange={(e) => setLoanRequest({ ...loanRequest, purpose: e.target.value })} placeholder="What will the financing support?" className="w-full bg-neutral-50 border border-neutral-100 rounded-[2rem] px-6 py-4 outline-none min-h-32" />
+                  <button type="submit" className="w-full bg-lime-400 text-[#0A1D11] py-4 rounded-[2rem] font-black text-xs uppercase tracking-widest">Submit Loan Request</button>
+                </form>
+                <div className="bg-white rounded-[3rem] p-10 border border-neutral-100 shadow-sm">
+                  <h3 className="text-2xl font-black mb-8">Funding Checklist</h3>
+                  <div className="space-y-4">
+                    {[
+                      'Updated profile and farm records',
+                      'Visible commodity listings',
+                      'Clear production purpose for funds',
+                      'Reachable settlement account details',
+                    ].map((item) => (
+                      <div key={item} className="flex items-center gap-4 p-4 rounded-2xl bg-neutral-50">
+                        <CheckCircle2 className="w-5 h-5 text-lime-600" />
+                        <p className="font-bold text-sm">{item}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <h3 className="text-2xl font-black mb-4">Financial Support Coming Soon</h3>
-                <p className="text-neutral-500 max-w-md mx-auto">
-                  We are partnering with top agricultural banks to bring you zero-collateral farming loans directly to your dashboard. Stay tuned!
-                </p>
               </div>
             </div>
           )}
@@ -913,6 +1297,36 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                   </button>
                 </div>
               </form>
+            </div>
+          )}
+
+          {activeTab === 'Settings' && (
+            <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in duration-500">
+              <div>
+                <h2 className="text-3xl font-black text-[#0A1D11]">Settings</h2>
+                <p className="text-neutral-500 font-medium">Control alerts, visibility, and operational preferences.</p>
+              </div>
+              <div className="bg-white rounded-[3rem] p-10 border border-neutral-100 shadow-sm space-y-6">
+                {[
+                  { key: 'emailAlerts', label: 'Email alerts' },
+                  { key: 'smsUpdates', label: 'SMS updates' },
+                  { key: 'autoReorder', label: 'Auto reorder recommendations' },
+                  { key: 'publicProfile', label: 'Public profile visibility' },
+                ].map((item) => (
+                  <div key={item.key} className="flex items-center justify-between p-5 rounded-[2rem] bg-neutral-50">
+                    <div>
+                      <p className="font-black">{item.label}</p>
+                      <p className="text-sm text-neutral-500">Manage how this account behaves across the marketplace.</p>
+                    </div>
+                    <button
+                      onClick={() => setSettingsState({ ...settingsState, [item.key]: !settingsState[item.key as keyof typeof settingsState] })}
+                      className={`w-16 h-9 rounded-full transition-all ${settingsState[item.key as keyof typeof settingsState] ? 'bg-lime-400' : 'bg-neutral-200'}`}
+                    >
+                      <div className={`w-7 h-7 rounded-full bg-white shadow-sm transition-transform ${settingsState[item.key as keyof typeof settingsState] ? 'translate-x-8' : 'translate-x-1'}`}></div>
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -191,7 +191,7 @@ const Marketplace: React.FC<MarketplaceProps> = ({
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
           {filteredProducts.map((product) => (
             <div key={product.id} className="group flex flex-col bg-white rounded-[3rem] overflow-hidden border border-neutral-100 hover:border-lime-400/50 transition-all duration-500 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)]">
-              <div className="relative h-72 overflow-hidden bg-neutral-50">
+              <div className="relative h-56 overflow-hidden bg-neutral-50">
                 <img
                   src={product.image_url}
                   alt={product.name}
@@ -199,13 +199,13 @@ const Marketplace: React.FC<MarketplaceProps> = ({
                 />
 
                 {/* Categories & Badges */}
-                <div className="absolute top-6 left-6 flex flex-col gap-2">
-                  <div className="bg-white/90 backdrop-blur-xl px-4 py-1.5 rounded-full text-[#0A1D11] text-[9px] font-black uppercase tracking-[0.15em] shadow-xl w-fit">
+                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                  <div className="bg-white/90 backdrop-blur-xl px-3 py-1.5 rounded-full text-[#0A1D11] text-[8px] font-black uppercase tracking-[0.15em] shadow-xl w-fit">
                     {product.category || 'Commodity'}
                   </div>
                   {product.verified && (
-                    <div className="bg-lime-400 px-4 py-1.5 rounded-full text-[#0A1D11] text-[9px] font-black uppercase tracking-[0.15em] shadow-xl flex items-center gap-1.5 w-fit">
-                      <ShieldCheck className="w-3 h-3" /> Vetted
+                    <div className="bg-lime-400 px-3 py-1.5 rounded-full text-[#0A1D11] text-[8px] font-black uppercase tracking-[0.15em] shadow-xl flex items-center gap-1.5 w-fit">
+                      <ShieldCheck className="w-2.5 h-2.5" /> Vetted
                     </div>
                   )}
                 </div>
@@ -213,7 +213,7 @@ const Marketplace: React.FC<MarketplaceProps> = ({
                 <div className="absolute bottom-0 inset-x-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent"></div>
               </div>
 
-              <div className="p-8 flex flex-col flex-grow">
+              <div className="p-6 flex flex-col flex-grow">
                 <div className="space-y-4 mb-8">
                   <div className="space-y-1">
                     <h3 className="text-xl font-bold text-[#0A1D11] group-hover:text-lime-600 transition-colors leading-tight line-clamp-1">{product.name}</h3>

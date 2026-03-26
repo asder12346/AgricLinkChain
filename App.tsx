@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import LogoCloud from './components/LogoCloud';
 import FeaturesCards from './components/ui/feature-shader-cards';
 import Marketplace from './components/Marketplace';
 import Stats from './components/Stats';
@@ -11,6 +10,7 @@ import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
+import Team from './components/Team';
 import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -152,8 +152,6 @@ const App: React.FC = () => {
           <Hero onStart={() => handleJoin('Farmer')} />
         </section>
 
-        <LogoCloud />
-
 
         <section id="solutions">
           <FeaturesCards />
@@ -173,6 +171,10 @@ const App: React.FC = () => {
 
         <section id="impact" className="py-20 md:py-32">
           <Mission onJoin={handleJoin} />
+        </section>
+
+        <section id="team" className="py-20 md:py-32">
+          <Team />
         </section>
 
         <section id="stories" className="py-20 md:py-32 bg-neutral-50 text-[#0A1D11]">
