@@ -12,6 +12,18 @@ create table public.profiles (
   referral_code text unique,
   referred_by text,
   avatar_url text,
+  phone text,
+  nin text,
+  business_registration_number text,
+  date_of_birth date,
+  gender text,
+  bio text,
+  website text,
+  secondary_email text,
+  preferred_products text,
+  company_name text,
+  company_role text,
+  onboarding_complete boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

@@ -44,7 +44,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
           farm_size: operationSize,
           farm_location: operationRegion,
           crops_farming: productFocus,
-          verified: true,
+          verified: false,
+          onboarding_complete: false,
         };
 
         const { data, error: authError } = await supabase.auth.signUp({

@@ -12,6 +12,7 @@ const Contact = lazy(() => import('./components/Contact'));
 const Footer = lazy(() => import('./components/Footer'));
 const Team = lazy(() => import('./components/Team'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
@@ -26,31 +27,64 @@ const SectionFallback = () => (
 );
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'landing' | 'auth' | 'dashboard' | 'admin-dashboard' | 'admin-login'>('landing');
+  const [view, setView] = useState<'landing' | 'auth' | 'onboarding' | 'dashboard' | 'admin-dashboard' | 'admin-login'>('landing');
   const [authRole, setAuthRole] = useState<string>('Farmer');
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAdminAuth, setIsAdminAuth] = useState(localStorage.getItem('agri_admin_auth') === 'true');
+
+  const loadProfileAndRoute = async (sessionUser: any, path: string) => {
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', sessionUser.id)
+      .single();
+
+    setProfile(prof);
+
+    if (prof?.user_type === 'Admin') {
+      setView('admin-dashboard');
+      return;
+    }
+
+    if (path === '/admin-dashboard') {
+      setView('admin-dashboard');
+      return;
+    }
+
+    if (!prof?.onboarding_complete) {
+      setView('onboarding');
+      return;
+    }
+
+    setView('dashboard');
+  };
 
 
   useEffect(() => {
     // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const path = window.location.pathname;
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
 
-      if (path === '/admin') {
-        setView(localStorage.getItem('agri_admin_auth') === 'true' ? 'admin-dashboard' : 'admin-login');
-      } else if (session?.user) {
-        setUser(session.user);
-        if (path === '/admin-dashboard') {
+        const path = window.location.pathname;
 
-          setView('admin-dashboard');
-        } else {
-          setView('dashboard');
+        if (path === '/admin') {
+          setView(localStorage.getItem('agri_admin_auth') === 'true' ? 'admin-dashboard' : 'admin-login');
+        } else if (session?.user) {
+          setUser(session.user);
+          await loadProfileAndRoute(session.user, path);
         }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    };
+
+    checkSession();
 
     // Global auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -59,21 +93,10 @@ const App: React.FC = () => {
 
       if (session?.user) {
         setUser(session.user);
-
-        // Fetch user type from profiles
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profile?.user_type === 'Admin') {
-          setView('admin-dashboard');
-        } else {
-          setView('dashboard');
-        }
+        await loadProfileAndRoute(session.user, path);
       } else {
         setUser(null);
+        setProfile(null);
         setView('landing');
       }
     });
@@ -87,12 +110,14 @@ const App: React.FC = () => {
       const checkRole = async () => {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('user_type')
+          .select('user_type, onboarding_complete')
           .eq('id', user.id)
           .single();
 
         if (profile?.user_type === 'Admin') {
           setView('admin-dashboard');
+        } else if (!profile?.onboarding_complete) {
+          setView('onboarding');
         } else {
           setView('dashboard');
         }
@@ -131,15 +156,30 @@ const App: React.FC = () => {
     );
   }
 
+  if (view === 'onboarding' && user) {
+    return (
+      <Suspense fallback={<SectionFallback />}>
+        <OnboardingPage
+          user={user}
+          profile={profile}
+          onBack={() => setView('landing')}
+          onComplete={() => setView('dashboard')}
+        />
+      </Suspense>
+    );
+  }
+
   if (view === 'admin-login') {
     return (
-      <AdminLogin
-        onLoginSuccess={() => {
-          setIsAdminAuth(true);
-          setView('admin-dashboard');
-        }}
-        onBack={() => setView('landing')}
-      />
+      <Suspense fallback={<SectionFallback />}>
+        <AdminLogin
+          onLoginSuccess={() => {
+            setIsAdminAuth(true);
+            setView('admin-dashboard');
+          }}
+          onBack={() => setView('landing')}
+        />
+      </Suspense>
     );
   }
 
