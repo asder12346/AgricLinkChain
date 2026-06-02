@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight, ExternalLink, Github, Linkedin, Sprout, Wheat, ShieldCheck, Zap, Globe, Code2 } from 'lucide-react';
+import corneliusPhoto from '../cornelius.jpeg';
 
 const team = [
   {
@@ -24,7 +25,7 @@ const team = [
     role: 'Lead Developer',
     description:
       'The technical architect building the secure, transparent infrastructure that powers real-time trade between farmers and international buyers at scale.',
-    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=800&auto=format&fit=crop',
+    image: corneliusPhoto,
     linkedin: '#',
     github: '#',
     specialty: 'Platform Engineering',

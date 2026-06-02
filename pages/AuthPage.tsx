@@ -1,6 +1,10 @@
 
 import React, { useState } from 'react';
-import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Ruler, MapPin, Sprout, ShieldCheck, Eye, EyeOff, Leaf, ShoppingBag } from 'lucide-react';
+import {
+  ArrowLeft, Loader2, AlertCircle, CheckCircle2, Ruler, MapPin, Sprout,
+  ShieldCheck, Eye, EyeOff, Leaf, ShoppingBag, Landmark, Truck, FlaskConical,
+  Database, Users
+} from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface AuthPageProps {
@@ -9,7 +13,16 @@ interface AuthPageProps {
 }
 
 const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) => {
-  const startingRole = initialType === 'Buyer' ? 'Buyer' : 'Farmer';
+  const roleOptions = [
+    { value: 'Farmer', label: 'Farmer', icon: Sprout, hint: 'List harvests and manage farm trade.' },
+    { value: 'Buyer', label: 'Buyer', icon: ShoppingBag, hint: 'Source verified produce and track orders.' },
+    { value: 'Financier', label: 'Financier', icon: Landmark, hint: 'Review loans and fund production.' },
+    { value: 'Logistics', label: 'Logistics', icon: Truck, hint: 'Coordinate pickup, delivery, and routing.' },
+    { value: 'Agent', label: 'Ext. Agent', icon: Users, hint: 'Onboard farmers and monitor field networks.' },
+    { value: 'Researcher', label: 'Research', icon: FlaskConical, hint: 'Study market, yield, and supply insights.' },
+    { value: 'Admin', label: 'Admin Data', icon: Database, hint: 'Govern records, users, and platform data.' },
+  ];
+  const startingRole = roleOptions.some((role) => role.value === initialType) ? initialType : 'Farmer';
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signup');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -77,8 +90,67 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
   
   const isSignup = activeTab === 'signup';
   const isFarmerSignup = isSignup && userType === 'Farmer';
-  const isBuyerSignup = isSignup && userType === 'Buyer';
-  const showProfileFields = isFarmerSignup || isBuyerSignup;
+  const showProfileFields = isSignup;
+  const selectedRole = roleOptions.find((role) => role.value === userType) || roleOptions[0];
+  const operationLabels: Record<string, { size: string; region: string; focus: string; sizePlaceholder: string; regionPlaceholder: string; focusPlaceholder: string }> = {
+    Farmer: {
+      size: 'Farm Size',
+      region: 'Farm Region',
+      focus: 'Crops / Produce',
+      sizePlaceholder: 'e.g. 100 hectares',
+      regionPlaceholder: 'State, region',
+      focusPlaceholder: 'e.g. Cocoa, cassava',
+    },
+    Buyer: {
+      size: 'Purchase / Warehouse Size',
+      region: 'Delivery / Sourcing Region',
+      focus: 'Products Needed',
+      sizePlaceholder: 'e.g. 50 tons monthly',
+      regionPlaceholder: 'Preferred buying region',
+      focusPlaceholder: 'e.g. Maize, rice, sesame',
+    },
+    Financier: {
+      size: 'Capital Capacity',
+      region: 'Funding Region',
+      focus: 'Funding Focus',
+      sizePlaceholder: 'e.g. ₦50m portfolio',
+      regionPlaceholder: 'States or commodity clusters',
+      focusPlaceholder: 'Inputs, working capital, equipment',
+    },
+    Logistics: {
+      size: 'Fleet / Route Capacity',
+      region: 'Coverage Region',
+      focus: 'Logistics Service',
+      sizePlaceholder: 'e.g. 12 trucks / 400 tons monthly',
+      regionPlaceholder: 'Pickup and delivery corridors',
+      focusPlaceholder: 'Cold chain, bulk haulage, warehousing',
+    },
+    Agent: {
+      size: 'Field Network Size',
+      region: 'Extension Zone',
+      focus: 'Support Focus',
+      sizePlaceholder: 'e.g. 80 farmers',
+      regionPlaceholder: 'LGA, state, or cluster',
+      focusPlaceholder: 'Training, verification, onboarding',
+    },
+    Researcher: {
+      size: 'Research Coverage',
+      region: 'Study Region',
+      focus: 'Research Focus',
+      sizePlaceholder: 'e.g. 5 crop clusters',
+      regionPlaceholder: 'Field or market study area',
+      focusPlaceholder: 'Yield, prices, climate, soil',
+    },
+    Admin: {
+      size: 'Data Scope',
+      region: 'Governance Region',
+      focus: 'Admin Focus',
+      sizePlaceholder: 'e.g. Platform operations',
+      regionPlaceholder: 'National, state, or program scope',
+      focusPlaceholder: 'User data, verification, compliance',
+    },
+  };
+  const currentLabels = operationLabels[userType] || operationLabels.Farmer;
 
   if (success) {
     return (
@@ -89,7 +161,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
           </div>
           <div className="space-y-2">
             <h2 className="text-4xl font-black text-white">Welcome Aboard!</h2>
-            <p className="text-white/50">Your agricultural profile is ready. Redirecting you now...</p>
+            <p className="text-white/50">Your {selectedRole.label.toLowerCase()} profile is ready. Redirecting you now...</p>
           </div>
           <Loader2 className="w-6 h-6 text-lime-400 animate-spin mx-auto" />
         </div>
@@ -132,7 +204,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
               </h2>
             </div>
             <div className="space-y-4">
-              {['Fair pricing — no hidden fees', 'Direct buyer connections globally', 'AI-powered market intelligence', 'Escrow-secured payments'].map((f, i) => (
+              {['Role-based dashboards for every stakeholder', 'Direct market and service coordination', 'Secure records from signup to settlement', 'Wallet, financing, and logistics visibility'].map((f, i) => (
                 <div key={i} className="flex items-center gap-3 text-white/60 text-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-lime-400 flex-shrink-0" />
                   {f}
@@ -205,37 +277,37 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
                   <>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">Register As</label>
-                      <div className="grid grid-cols-2 gap-3">
-                        {([
-                          { value: 'Farmer', label: 'Farmer', icon: Sprout },
-                          { value: 'Buyer', label: 'Buyer', icon: ShoppingBag },
-                        ] as const).map((role) => (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {roleOptions.map((role) => (
                           <button
                             key={role.value}
                             type="button"
                             onClick={() => setUserType(role.value)}
-                            className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-black transition-all ${
+                            className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition-all ${
                               userType === role.value
-                                ? 'border-lime-400 bg-lime-400 text-[#071210]'
+                                ? 'border-lime-400 bg-lime-400 text-[#071210] shadow-lg shadow-lime-400/15'
                                 : 'border-white/[0.1] bg-white/[0.04] text-white/70 hover:text-white'
                             }`}
                           >
-                            <role.icon className="w-4 h-4" />
-                            {role.label}
+                            <role.icon className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                            <span>
+                              <span className="block text-sm font-black">{role.label}</span>
+                              <span className={`block text-[10px] leading-snug mt-1 ${userType === role.value ? 'text-[#071210]/65' : 'text-white/35'}`}>{role.hint}</span>
+                            </span>
                           </button>
                         ))}
                       </div>
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">
-                        {userType === 'Farmer' ? 'Farmer / Business Name' : 'Buyer / Company Name'}
+                        {userType === 'Farmer' ? 'Farmer / Business Name' : `${selectedRole.label} / Organization Name`}
                       </label>
                       <input
                         required
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder={userType === 'Farmer' ? 'Ibrahim Musa Farms' : 'Lagos Grain Buyers Ltd'}
+                        placeholder={userType === 'Farmer' ? 'Ibrahim Musa Farms' : 'AgricLink Partner Ltd'}
                         className="w-full bg-white/[0.05] border border-white/[0.1] rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
                       />
                     </div>
@@ -301,40 +373,40 @@ const AuthPage: React.FC<AuthPageProps> = ({ onBack, initialType = 'Farmer' }) =
                 <div className="space-y-4 animate-reveal">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-1.5 block">
-                      <Ruler className="w-3 h-3" /> {isFarmerSignup ? 'Farm Size' : 'Purchase / Warehouse Size'}
+                      <Ruler className="w-3 h-3" /> {currentLabels.size}
                     </label>
                     <input
                       required
                       type="text"
                       value={operationSize}
                       onChange={(e) => setOperationSize(e.target.value)}
-                      placeholder={isFarmerSignup ? 'e.g. 100 hectares' : 'e.g. 50 tons monthly'}
+                      placeholder={currentLabels.sizePlaceholder}
                       className="w-full bg-white/[0.05] border border-lime-400/20 rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-1.5 block">
-                      <MapPin className="w-3 h-3" /> {isFarmerSignup ? 'Farm Region' : 'Delivery / Sourcing Region'}
+                      <MapPin className="w-3 h-3" /> {currentLabels.region}
                     </label>
                     <input
                       required
                       type="text"
                       value={operationRegion}
                       onChange={(e) => setOperationRegion(e.target.value)}
-                      placeholder={isFarmerSignup ? 'State, Region' : 'Preferred buying region'}
+                      placeholder={currentLabels.regionPlaceholder}
                       className="w-full bg-white/[0.05] border border-lime-400/20 rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-lime-400 uppercase tracking-widest flex items-center gap-1.5 block">
-                      <Sprout className="w-3 h-3" /> {isFarmerSignup ? 'Crops / Produce' : 'Products Needed'}
+                      <Sprout className="w-3 h-3" /> {currentLabels.focus}
                     </label>
                     <input
                       required
                       type="text"
                       value={productFocus}
                       onChange={(e) => setProductFocus(e.target.value)}
-                      placeholder={isFarmerSignup ? 'e.g. Cocoa, Cassava' : 'e.g. Maize, Rice, Sesame'}
+                      placeholder={currentLabels.focusPlaceholder}
                       className="w-full bg-white/[0.05] border border-lime-400/20 rounded-2xl px-5 py-3.5 text-white placeholder-white/25 text-sm"
                     />
                   </div>

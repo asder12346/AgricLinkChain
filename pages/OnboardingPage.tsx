@@ -11,7 +11,66 @@ interface OnboardingPageProps {
 
 const OnboardingPage: React.FC<OnboardingPageProps> = ({ user, profile, onComplete, onBack }) => {
   const role = profile?.user_type || user?.user_metadata?.user_type || 'Farmer';
-  const isFarmer = role === 'Farmer' || role === 'Agent';
+  const roleCopy: Record<string, { secondStep: string; companyRole: string; volume: string; region: string; products: string; productsPlaceholder: string }> = {
+    Farmer: {
+      secondStep: 'Farm Details',
+      companyRole: 'Farm role',
+      volume: 'Farm size',
+      region: 'Farm location',
+      products: 'Crops farming',
+      productsPlaceholder: 'Cassava, maize, cocoa...',
+    },
+    Buyer: {
+      secondStep: 'Business Details',
+      companyRole: 'Buyer role',
+      volume: 'Purchase volume',
+      region: 'Delivery region',
+      products: 'Products needed',
+      productsPlaceholder: 'Rice, maize, cocoa...',
+    },
+    Financier: {
+      secondStep: 'Funding Details',
+      companyRole: 'Financing role',
+      volume: 'Capital capacity',
+      region: 'Funding region',
+      products: 'Funding focus',
+      productsPlaceholder: 'Input loans, equipment, working capital...',
+    },
+    Logistics: {
+      secondStep: 'Logistics Details',
+      companyRole: 'Logistics role',
+      volume: 'Fleet / route capacity',
+      region: 'Coverage region',
+      products: 'Services offered',
+      productsPlaceholder: 'Cold chain, bulk haulage, warehousing...',
+    },
+    Agent: {
+      secondStep: 'Extension Details',
+      companyRole: 'Extension role',
+      volume: 'Network size',
+      region: 'Extension zone',
+      products: 'Support focus',
+      productsPlaceholder: 'Onboarding, training, verification...',
+    },
+    Researcher: {
+      secondStep: 'Research Details',
+      companyRole: 'Research role',
+      volume: 'Research coverage',
+      region: 'Study region',
+      products: 'Research focus',
+      productsPlaceholder: 'Yield, price, soil, climate...',
+    },
+    Admin: {
+      secondStep: 'Admin Details',
+      companyRole: 'Admin role',
+      volume: 'Data scope',
+      region: 'Governance region',
+      products: 'Admin focus',
+      productsPlaceholder: 'Users, records, compliance...',
+    },
+  };
+  const currentCopy = roleCopy[role] || roleCopy.Farmer;
+  const isFarmer = role === 'Farmer';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -36,10 +95,8 @@ const OnboardingPage: React.FC<OnboardingPageProps> = ({ user, profile, onComple
   });
 
   const steps = useMemo(() => (
-    isFarmer
-      ? ['Identity', 'Farm Details', 'Finish']
-      : ['Identity', 'Business Details', 'Finish']
-  ), [isFarmer]);
+    ['Identity', currentCopy.secondStep, 'Finish']
+  ), [currentCopy.secondStep]);
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -184,11 +241,11 @@ const OnboardingPage: React.FC<OnboardingPageProps> = ({ user, profile, onComple
               </>
             ) : (
               <>
-                <Field label="Company name" value={form.company_name} onChange={(v) => updateField('company_name', v)} icon={Building2} placeholder="Company or buyer name" />
-                <Field label="Buyer role" value={form.company_role} onChange={(v) => updateField('company_role', v)} icon={User} placeholder="Procurement lead, owner..." />
-                <Field label="Purchase volume" value={form.farm_size} onChange={(v) => updateField('farm_size', v)} icon={Leaf} placeholder="e.g. 20 tons monthly" />
-                <Field label="Delivery region" value={form.farm_location} onChange={(v) => updateField('farm_location', v)} icon={MapPin} placeholder="Preferred sourcing/delivery region" />
-                <Field label="Products needed" value={form.preferred_products} onChange={(v) => updateField('preferred_products', v)} icon={Leaf} placeholder="Rice, maize, cocoa..." />
+                <Field label="Organization name" value={form.company_name} onChange={(v) => updateField('company_name', v)} icon={Building2} placeholder="Company, institution, or program name" />
+                <Field label={currentCopy.companyRole} value={form.company_role} onChange={(v) => updateField('company_role', v)} icon={User} placeholder="Lead, owner, coordinator..." />
+                <Field label={currentCopy.volume} value={form.farm_size} onChange={(v) => updateField('farm_size', v)} icon={Leaf} placeholder="e.g. 20 tons monthly" />
+                <Field label={currentCopy.region} value={form.farm_location} onChange={(v) => updateField('farm_location', v)} icon={MapPin} placeholder="Preferred region or service area" />
+                <Field label={currentCopy.products} value={form.preferred_products} onChange={(v) => updateField('preferred_products', v)} icon={Leaf} placeholder={currentCopy.productsPlaceholder} />
                 <Field label="Business registration number" value={form.business_registration_number} onChange={(v) => updateField('business_registration_number', v)} icon={Building2} placeholder="Company registration number" />
               </>
             )}

@@ -31,15 +31,15 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 w-full">
         <div className="grid lg:grid-cols-5 gap-12 xl:gap-20 items-center">
-          <div className="lg:col-span-3 space-y-8 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 bg-[#d7b464]/10 border border-[#d7b464]/25 rounded-full px-4 py-2 mx-auto lg:mx-0 shadow-[0_8px_30px_rgba(0,0,0,0.18)]">
+          <div className="lg:col-span-3 min-w-0 w-full max-w-[calc(100vw-2rem)] lg:max-w-none mx-auto space-y-8 text-center lg:text-left">
+            <div className="inline-flex max-w-full items-center justify-center gap-2 bg-[#d7b464]/10 border border-[#d7b464]/25 rounded-full px-3 sm:px-4 py-2 mx-auto lg:mx-0 shadow-[0_8px_30px_rgba(0,0,0,0.18)]">
               <span className="dot-live" />
-              <span className="text-[11px] font-bold uppercase tracking-widest text-[#d7b464]">
+              <span className="text-[9px] sm:text-[11px] font-bold uppercase tracking-widest text-[#d7b464] text-center">
                 Built for soil, harvest, and trade
               </span>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-[0.98]">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.02]">
               <span className="text-white">Grow from</span>
               <br />
               <span className="text-gradient-lime">field to market</span>
@@ -47,11 +47,11 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
               <span className="text-white">with confidence</span>
             </h1>
 
-            <p className="text-lg md:text-xl text-white/50 max-w-xl leading-relaxed mx-auto lg:mx-0">
+            <p className="text-base md:text-xl text-white/50 max-w-[18rem] sm:max-w-xl leading-relaxed mx-auto lg:mx-0 px-1 sm:px-0">
               AgricLinkChain gives farmers and buyers a stronger trading ground: transparent pricing, trusted records, direct demand, and a platform that feels rooted in real agriculture.
             </p>
 
-            <div className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto lg:mx-0">
+            <div className="grid sm:grid-cols-3 gap-4 w-full max-w-[18rem] sm:max-w-2xl mx-auto lg:mx-0">
               {[
                 { icon: Wheat, label: 'Harvest Ready', value: '320k+ tons' },
                 { icon: Sun, label: 'Active Regions', value: '36 states' },
@@ -65,17 +65,17 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
               ))}
             </div>
 
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
+            <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center justify-center lg:justify-start gap-4 w-full max-w-[16rem] sm:max-w-none mx-auto lg:mx-0">
               <button
                 onClick={onStart}
-                className="group bg-lime-400 text-[#071210] px-7 py-4 rounded-2xl text-sm font-bold flex items-center gap-2.5 hover:bg-lime-300 transition-all hover:shadow-xl hover:shadow-lime-400/30 btn-press"
+                className="group bg-lime-400 text-[#071210] px-5 sm:px-7 py-4 rounded-2xl text-sm font-bold flex items-center justify-center gap-2.5 hover:bg-lime-300 transition-all hover:shadow-xl hover:shadow-lime-400/30 btn-press"
               >
                 Start Trading
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
               <button
                 onClick={() => document.querySelector('#marketplace')?.scrollIntoView({ behavior: 'smooth' })}
-                className="border border-[#d7b464]/20 bg-[#f7f3e8]/[0.03] text-white/80 px-7 py-4 rounded-2xl text-sm font-bold hover:bg-[#d7b464]/10 hover:text-white hover:border-[#d7b464]/35 transition-all btn-press"
+                className="border border-[#d7b464]/20 bg-[#f7f3e8]/[0.03] text-white/80 px-5 sm:px-7 py-4 rounded-2xl text-sm font-bold hover:bg-[#d7b464]/10 hover:text-white hover:border-[#d7b464]/35 transition-all btn-press"
               >
                 Explore Produce
               </button>
