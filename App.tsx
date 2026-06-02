@@ -18,6 +18,19 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
 import { supabase } from './lib/supabase';
 
+const withTimeout = async <T,>(promise: Promise<T>, ms = 5000): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('Request timed out')), ms);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timeoutId!);
+  }
+};
+
 const SectionFallback = () => (
   <div className="py-20 md:py-32">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,11 +49,11 @@ const App: React.FC = () => {
 
   const loadProfileAndRoute = async (sessionUser: any, path: string) => {
     try {
-      const { data: prof, error } = await supabase
+      const { data: prof, error } = await withTimeout(supabase
         .from('profiles')
         .select('*')
         .eq('id', sessionUser.id)
-        .single();
+        .single(), 6000);
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows found", which is expected for new users
         console.error('Error fetching profile:', error);
@@ -79,7 +92,7 @@ const App: React.FC = () => {
     const initAuth = async () => {
       try {
         // 1. Initial session check
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await withTimeout(supabase.auth.getSession(), 4000);
         if (error) throw error;
 
         const path = window.location.pathname;

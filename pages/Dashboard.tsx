@@ -5,7 +5,8 @@ import {
   Trash2, RefreshCw, Users, Loader2, Save, ShoppingBag, Box, Image as ImageIcon,
   PlusCircle, CheckCircle2, Edit2, Calendar, MapPin, ExternalLink, Wallet, CreditCard,
   ChevronRight, ArrowLeft, Truck, Star, ShieldCheck, UserPlus, Share2, Copy, Camera, Upload,
-  Sprout, Ruler, Info, Search, MoreVertical, Landmark, Banknote, Heart, MessageSquare
+  Sprout, Ruler, Info, Search, MoreVertical, Landmark, Banknote, Heart, MessageSquare,
+  Database, FileText
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import Marketplace from '../components/Marketplace';
@@ -430,6 +431,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
   const userRole = profile?.user_type || user.user_metadata?.user_type;
   const canManageFarm = isFarmerRole(userRole);
   const canBuyProducts = isBuyerRole(userRole);
+  const isFinancier = userRole === 'Financier';
+  const isLogistics = userRole === 'Logistics';
+  const isResearcher = userRole === 'Researcher';
+  const isAdminData = userRole === 'Admin';
   const isVerified = true; // Simulating verification for dashboard aesthetics
   const farmerOrders = orders.filter((o) => o.farmer_id === user.id);
   const buyerOrders = orders.filter((o) => o.buyer_id === user.id);
@@ -437,10 +442,45 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
   const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const conversationCount = canManageFarm ? farmerOrders.length : buyerOrders.length;
   const messagePartners = (canManageFarm ? farmerOrders : buyerOrders).slice(0, 4);
+  const roleStats = [
+    { label: 'Authenticated Role', value: userRole || 'Farmer', icon: ShieldCheck },
+    { label: 'Wallet Balance', value: `₦${orders.reduce((a, b) => a + (b.total_amount || 0), 0).toLocaleString()}`, icon: Wallet },
+    { label: 'Active Records', value: `${orders.length || listings.length || onboardedEntities.length}`, icon: Database },
+  ];
+  const roleActionCards = [
+    ...(canManageFarm ? [
+      { title: 'Farmer', description: 'Manage products, incoming orders, payments, and financing requests.', tab: 'Farmer Dashboard', icon: Sprout },
+      { title: 'Marketplace', description: 'Publish harvest lots and keep your farm inventory visible to buyers.', tab: 'My Farm Products', icon: Package },
+    ] : []),
+    ...(canBuyProducts ? [
+      { title: 'Buyer', description: 'Source verified commodities, save listings, and checkout from your cart.', tab: 'Buyer Dashboard', icon: ShoppingBag },
+      { title: 'Marketplace', description: 'Explore current produce supply and create purchase orders.', tab: 'Buyer Dashboard', icon: Search },
+    ] : []),
+    ...(isFinancier ? [
+      { title: 'Financier', description: 'Review loan demand, capital exposure, and farmer readiness signals.', tab: 'Financier', icon: Landmark },
+    ] : []),
+    ...(isLogistics ? [
+      { title: 'Logistics', description: 'Coordinate delivery lanes, dispatch capacity, and shipment status.', tab: 'Logistics', icon: Truck },
+    ] : []),
+    ...(userRole === 'Agent' ? [
+      { title: 'Ext. Agent', description: 'Onboard producers, share referral IDs, and inspect field network activity.', tab: 'My Network', icon: Users },
+    ] : []),
+    ...(isResearcher ? [
+      { title: 'Research', description: 'Track market intelligence, production signals, and commodity insights.', tab: 'Research', icon: Info },
+    ] : []),
+    ...(isAdminData ? [
+      { title: 'Admin Data', description: 'Monitor user data health, compliance status, and platform records.', tab: 'Admin Data', icon: ShieldCheck },
+    ] : []),
+    { title: 'Wallet', description: 'See settlement balance, recent activity, and connected payout setup.', tab: 'Wallet', icon: Wallet },
+  ];
 
   const menuItems = [
     { name: 'Overview', icon: LayoutDashboard },
     ...(userRole === 'Agent' ? [{ name: 'My Network', icon: Users }] : []),
+    ...(isFinancier ? [{ name: 'Financier', icon: Landmark }] : []),
+    ...(isLogistics ? [{ name: 'Logistics', icon: Truck }] : []),
+    ...(isResearcher ? [{ name: 'Research', icon: Info }] : []),
+    ...(isAdminData ? [{ name: 'Admin Data', icon: ShieldCheck }] : []),
     ...(canManageFarm ? [
       { name: 'Farmer Dashboard', icon: Sprout },
       { name: 'My Farm Products', icon: Package },
@@ -456,6 +496,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
       { name: 'Messages', icon: MessageSquare },
       { name: 'Payments', icon: CreditCard },
     ] : []),
+    { name: 'Wallet', icon: Wallet },
     { name: 'Profile', icon: UserIcon },
     { name: 'Settings', icon: Settings },
   ];
@@ -555,6 +596,47 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                     </div>
                   </div>
                   <p className="text-neutral-500 font-medium">Your account is fully verified and connected to the main exchange.</p>
+                </div>
+              </div>
+
+              <div className="bg-[#0A1D11] rounded-[2rem] p-6 md:p-8 text-white overflow-hidden relative">
+                <div className="absolute inset-0 bg-grid opacity-10" />
+                <div className="relative grid lg:grid-cols-[0.95fr_1.05fr] gap-8">
+                  <div className="space-y-5">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-lime-400 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[#0A1D11]">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Authenticated {userRole} workspace
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-black tracking-tight">Your role controls this dashboard.</h3>
+                      <p className="text-white/50 mt-3 text-sm leading-relaxed">
+                        AgricLinkChain uses your signup role to show the tools, data, wallet records, and workflows that match your place in the agricultural value chain.
+                      </p>
+                    </div>
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      {roleStats.map((stat) => (
+                        <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+                          <stat.icon className="w-4 h-4 text-lime-400 mb-3" />
+                          <p className="text-[9px] font-black uppercase tracking-widest text-white/35">{stat.label}</p>
+                          <p className="text-lg font-black mt-1">{stat.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {roleActionCards.map((card) => (
+                      <button
+                        key={`${card.title}-${card.tab}`}
+                        onClick={() => setActiveTab(card.tab)}
+                        className="text-left rounded-2xl border border-white/10 bg-white/[0.06] p-5 hover:bg-white/[0.1] hover:border-lime-400/30 transition-all"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-lime-400 text-[#0A1D11] flex items-center justify-center mb-4">
+                          <card.icon className="w-5 h-5" />
+                        </div>
+                        <h4 className="font-black">{card.title}</h4>
+                        <p className="text-xs leading-relaxed text-white/45 mt-2">{card.description}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1201,6 +1283,164 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut, onGoHome }) => {
                       <div key={item} className="flex items-center gap-4 p-4 rounded-2xl bg-neutral-50">
                         <CheckCircle2 className="w-5 h-5 text-lime-600" />
                         <p className="font-bold text-sm">{item}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Financier' && isFinancier && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <div>
+                <h2 className="text-3xl font-black text-[#0A1D11]">Financier Workspace</h2>
+                <p className="text-neutral-500 font-medium">Assess farmer readiness, loan demand, and capital deployment opportunities.</p>
+              </div>
+              <div className="grid md:grid-cols-3 gap-8">
+                {[
+                  { label: 'Open Applications', value: '24', icon: FileText },
+                  { label: 'Capital Pipeline', value: '₦48.5m', icon: Landmark },
+                  { label: 'Risk Watchlist', value: '6', icon: ShieldCheck },
+                ].map((item) => (
+                  <div key={item.label} className="bg-white rounded-[2rem] p-8 border border-neutral-100 shadow-sm">
+                    <item.icon className="w-7 h-7 text-lime-600 mb-5" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{item.label}</p>
+                    <p className="text-4xl font-black mt-3">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-white rounded-[2rem] p-8 border border-neutral-100 shadow-sm">
+                <h3 className="text-2xl font-black mb-6">Funding Queue</h3>
+                <div className="space-y-4">
+                  {['Cocoa harvest bridge loan', 'Cassava processing input support', 'Rice cluster irrigation upgrade'].map((item, index) => (
+                    <div key={item} className="flex items-center justify-between rounded-2xl bg-neutral-50 p-5">
+                      <div>
+                        <p className="font-black">{item}</p>
+                        <p className="text-xs text-neutral-500 mt-1">Verification score {92 - index * 7}%</p>
+                      </div>
+                      <button className="px-5 py-3 rounded-2xl bg-[#0A1D11] text-white text-[10px] font-black uppercase tracking-widest">Review</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Logistics' && isLogistics && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <div>
+                <h2 className="text-3xl font-black text-[#0A1D11]">Logistics Workspace</h2>
+                <p className="text-neutral-500 font-medium">Plan pickup routes, monitor load capacity, and coordinate delivery milestones.</p>
+              </div>
+              <div className="grid lg:grid-cols-[1fr_0.9fr] gap-8">
+                <div className="bg-white rounded-[2rem] p-8 border border-neutral-100 shadow-sm">
+                  <h3 className="text-2xl font-black mb-6">Active Delivery Lanes</h3>
+                  <div className="space-y-4">
+                    {[
+                      ['Kaduna grain route', '14 trucks assigned', 'In transit'],
+                      ['Ondo cocoa corridor', '8 trucks ready', 'Loading'],
+                      ['Benue cassava lane', '5 trucks open', 'Awaiting dispatch'],
+                    ].map(([lane, capacity, status]) => (
+                      <div key={lane} className="grid sm:grid-cols-[1fr_auto] gap-4 rounded-2xl bg-neutral-50 p-5">
+                        <div>
+                          <p className="font-black">{lane}</p>
+                          <p className="text-xs text-neutral-500 mt-1">{capacity}</p>
+                        </div>
+                        <span className="self-start rounded-full bg-lime-100 px-4 py-2 text-[9px] font-black uppercase tracking-widest text-lime-700">{status}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-[#0A1D11] rounded-[2rem] p-8 text-white shadow-2xl">
+                  <Truck className="w-10 h-10 text-lime-400 mb-6" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/35">Fleet Capacity</p>
+                  <p className="text-5xl font-black text-lime-400 mt-3">72%</p>
+                  <p className="text-white/45 mt-4 text-sm">Capacity across current verified agricultural delivery requests.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Research' && isResearcher && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <div>
+                <h2 className="text-3xl font-black text-[#0A1D11]">Research Workspace</h2>
+                <p className="text-neutral-500 font-medium">Study production patterns, price movement, and field intelligence from connected nodes.</p>
+              </div>
+              <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
+                {['Yield Signals', 'Price Trends', 'Soil Notes', 'Demand Clusters'].map((item, index) => (
+                  <div key={item} className="bg-white rounded-[2rem] p-6 border border-neutral-100 shadow-sm">
+                    <Search className="w-6 h-6 text-lime-600 mb-5" />
+                    <p className="font-black">{item}</p>
+                    <p className="text-3xl font-black mt-4">{[128, 42, 17, 9][index]}</p>
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black mt-1">Records</p>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-white rounded-[2rem] p-8 border border-neutral-100 shadow-sm">
+                <h3 className="text-2xl font-black mb-6">Current Insight Brief</h3>
+                <p className="text-neutral-600 leading-relaxed">
+                  Sesame, maize, and cassava clusters are showing stronger buyer activity. Research accounts can use this space to prepare reports, compare field evidence, and export decision notes for platform teams.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Admin Data' && isAdminData && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <div>
+                <h2 className="text-3xl font-black text-[#0A1D11]">Admin Data Workspace</h2>
+                <p className="text-neutral-500 font-medium">Monitor platform records, verification health, and user data quality.</p>
+              </div>
+              <div className="grid md:grid-cols-3 gap-8">
+                {[
+                  { label: 'Profiles', value: '300k+' },
+                  { label: 'Verified Nodes', value: '99.2%' },
+                  { label: 'Data Flags', value: '18' },
+                ].map((item) => (
+                  <div key={item.label} className="bg-white rounded-[2rem] p-8 border border-neutral-100 shadow-sm">
+                    <Database className="w-7 h-7 text-lime-600 mb-5" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{item.label}</p>
+                    <p className="text-4xl font-black mt-3">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-white rounded-[2rem] p-8 border border-neutral-100 shadow-sm">
+                <h3 className="text-2xl font-black mb-6">Governance Checks</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {['Duplicate profile review', 'Incomplete onboarding records', 'Payment identity checks', 'Listing compliance audit'].map((item) => (
+                    <div key={item} className="flex items-center gap-4 rounded-2xl bg-neutral-50 p-5">
+                      <CheckCircle2 className="w-5 h-5 text-lime-600" />
+                      <p className="font-bold text-sm">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Wallet' && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-8">
+                <div className="bg-[#0A1D11] rounded-[2rem] p-8 text-white shadow-2xl">
+                  <Wallet className="w-10 h-10 text-lime-400 mb-8" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/35">Available Wallet Balance</p>
+                  <p className="text-5xl font-black text-lime-400 mt-3">₦{(orders.reduce((a, b) => a + (b.total_amount || 0), 0) + cartTotal).toLocaleString()}</p>
+                  <p className="text-white/45 mt-5 text-sm">Your wallet reflects recorded trade value, cart commitments, and role-linked settlement activity.</p>
+                </div>
+                <div className="bg-white rounded-[2rem] p-8 border border-neutral-100 shadow-sm">
+                  <h2 className="text-3xl font-black text-[#0A1D11]">Wallet Activity</h2>
+                  <div className="mt-8 space-y-4">
+                    {(orders.length > 0 ? orders.slice(0, 4) : [
+                      { id: 'wallet-demo-1', status: 'pending', total_amount: 0, created_at: new Date().toISOString() },
+                    ]).map((order: any) => (
+                      <div key={order.id} className="flex items-center justify-between rounded-2xl bg-neutral-50 p-5">
+                        <div>
+                          <p className="font-black text-sm">Wallet record #{String(order.id).slice(0, 8)}</p>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{order.status}</p>
+                        </div>
+                        <p className="font-black">₦{(order.total_amount || 0).toLocaleString()}</p>
                       </div>
                     ))}
                   </div>

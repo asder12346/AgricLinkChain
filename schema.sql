@@ -3,7 +3,7 @@ create table public.profiles (
   id uuid references auth.users on delete cascade primary key,
   full_name text,
   email text,
-  user_type text check (user_type in ('Farmer', 'Buyer', 'Agent', 'Admin', 'Financier')),
+  user_type text check (user_type in ('Farmer', 'Buyer', 'Agent', 'Admin', 'Financier', 'Logistics', 'Researcher')),
   location text,
   farm_size text,
   farm_location text,
